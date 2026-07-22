@@ -1,0 +1,583 @@
+(require 'package)
+
+(setq package-archives '(("melpa" . "https://melpa.org/packages/")
+			 ("org" . "https://orgmode.org/elpa/")
+			 ("elpa" . "https://elpa.gnu.org/packages/")))
+
+(package-initialize)
+(unless package-archive-contents
+  (package-refresh-contents))
+
+;; Initialize use-package on non-Linux platforms
+(unless (package-installed-p 'use-package)
+  (package-install 'use-package))
+
+(require 'use-package)
+(setq use-package-always-ensure t)
+
+(add-to-list 'load-path "~/.emacs.d/lisp/")
+
+(setq display-buffer-alist '(("\\`\\*e?shell" display-buffer-pop-up-window)
+                            ("\\`\\*shell" display-buffer-pop-up-window)
+                            ("\\`\\*term" display-buffer-pop-up-window)))
+
+(use-package savehist
+  :config
+  (add-to-list 'savehist-additional-variables 'eww-history)
+  (savehist-mode))
+
+;; Define function to toggle fullscreen and bind F11 to it
+(defun fullscreen ()
+  (interactive)
+  (set-frame-parameter nil 'fullscreen
+    (if (frame-parameter nil 'fullscreen) nil 'fullboth)))
+
+(fullscreen)
+
+(tool-bar-mode 0)
+(menu-bar-mode 0)
+(scroll-bar-mode 0)
+(tooltip-mode 0)
+(display-time-mode 1)
+(set-fringe-mode 5)
+
+(setq inhibit-startup-screen t)
+(setq inhibit-startup-message t)
+(setq visible-bell t)
+
+(use-package doom-themes
+:init (load-theme 'doom-outrun-electric t))
+
+(set-face-attribute 'default nil :font "Fira Code Retina" :height 120)
+(set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height 120)
+(set-face-attribute 'variable-pitch nil :font "Cantarell" :height 140 :weight 'regular)
+
+;; Enable display of line numbers
+(column-number-mode 1)
+(global-display-line-numbers-mode t)
+
+;; Disable line numbers for some modes
+(dolist (mode '(org-mode-hook
+		term-mode-hook
+		shell-mode-hook
+		treemacs-mode-hook
+		eshell-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 0))))
+
+(use-package command-log-mode)
+
+(use-package all-the-icons)
+
+(use-package dired
+  :ensure nil)
+
+;; Make ESC quit prompts
+(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+
+(use-package general
+  :config
+  (general-create-definer max/leader-keys
+    :keymaps 'override
+    :prefix "C-q")
+
+  (max/leader-keys
+    "t" '(:ignore t :which-key "toggles")
+    "c" '(org-capture :which-key "capture template")))
+
+(use-package hydra)
+
+(defhydra hydra-text-scale (:timeout 4)
+  "scale text"
+  ("j" text-scale-increase "in")
+  ("k" text-scale-decrease "out")
+  ("f" nil "finished" :exit t))
+
+(max/leader-keys
+  "ts" '(hydra-text-scale/body :which-key "scale text"))
+
+(use-package doom-modeline
+  :init (doom-modeline-mode 1)
+  :custom ((doom-modeline-height 7)))
+
+(use-package which-key
+  :init (which-key-mode)
+  :diminish which-key-mode
+  :config
+  (setq which-key-idle-delay 0.3))
+
+(use-package ivy
+  :diminish
+  :bind (("C-s" . swiper)
+         :map ivy-minibuffer-map
+         ("TAB" . ivy-alt-done)
+         ("C-l" . ivy-alt-done)
+         ("C-j" . ivy-next-line)
+         ("C-k" . ivy-previous-line)
+         :map ivy-switch-buffer-map
+         ("C-k" . ivy-previous-line)
+         ("C-l" . ivy-done)
+         ("C-d" . ivy-switch-buffer-kill)
+         :map ivy-reverse-i-search-map
+         ("C-k" . ivy-previous-line)
+         ("C-d" . ivy-reverse-i-search-kill))
+  :config
+  (setq ivy-use-selectable-prompt t
+        ivy-extra-directories nil
+	ivy-use-history t)
+  (ivy-mode 1))
+
+(use-package ivy-prescient
+  :after ivy
+  :config
+  (ivy-prescient-mode 1)
+  (prescient-persist-mode 1))
+
+(use-package ivy-rich
+  :init
+  (ivy-rich-mode 1))
+
+(use-package counsel
+  :bind (("M-x" . counsel-M-x)
+         ("C-x b" . counsel-ibuffer)
+         ("C-x C-f" . counsel-find-file)
+         :map minibuffer-local-map
+         ("C-r" . 'counsel-minibuffer-history))
+  :config
+  (setq counsel-find-file-ignore-regexp
+      (rx (or (seq string-start "#" (* any) "#" string-end)
+              (seq (* any) "~" string-end)
+              (seq (* any) ".swp" string-end)
+              (seq (* any) ".tmp" string-end)))))
+
+(use-package helpful
+  :custom
+  (counsel-describe-function-function #'helpful-callable)
+  (counsel-describe-variable-function #'helpful-variable)
+  :bind
+  ([remap describe-function] . counsel-describe-function)
+  ([remap describe-command] . helpful-command)
+  ([remap describe-variable] . counsel-describe-variable)
+  ([remap describe-key] . helpful-key))
+
+(defun max/org-mode-setup ()
+  (org-indent-mode)
+  (variable-pitch-mode 1)
+  (auto-fill-mode 0)
+  (visual-line-mode 1))
+
+(use-package org
+  :hook (org-mode . max/org-mode-setup)
+  :config
+  (setq org-ellipsis " ▾"
+	org-agenda-start-with-log-mode t
+	org-log-done 'time
+	org-log-into-drawer t
+	org-hide-emphasis-markers t
+	org-agenda-files
+	'("~/Nextcloud/Documents/org-files/tasks.org"
+	  "~/Nextcloud/Documents/org-files/habits.org"))
+  (require 'org-habit)
+  (add-to-list 'org-modules 'org-habit)
+  (setq org-habit-graph-column 60))
+
+(use-package org-bullets
+  :after org
+  :hook (org-mode . org-bullets-mode))
+
+(font-lock-add-keywords 'org-mode
+			'(("^ *\\([-]\\) "
+			  (0 (prog1 () (compose-region (match-beginning 1)(match-end 1) "•"))))))
+
+(with-eval-after-load 'org-faces (dolist (face '((org-level-1 . 1.2)
+	        (org-level-2 . 1.1)
+		(org-level-3 . 1.05)
+		(org-level-4 . 1.0)
+		(org-level-5 . 1.1)
+		(org-level-6 . 1.1)
+		(org-level-7 . 1.1)
+		(org-level-8 . 1.1)))
+	      (set-face-attribute (car face) nil :font "Cantarell" :weight 'regular :height (cdr face)))
+  (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-hide nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+  (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+  (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-table nil :inherit 'fixed-pitch))
+
+(defun max/org-mode-visual-fill ()
+  (setq visual-fill-column-width 100
+	visual-fill-column-center-text t)
+  (visual-fill-column-mode 1))
+
+(use-package visual-fill-column
+  :hook (org-mode . max/org-mode-visual-fill))
+
+(setq org-todo-keywords
+    '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
+      (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)" "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
+
+
+(require 'org-habit)
+  (add-to-list 'org-modules 'org-habit)
+  (setq org-habit-graph-column 60)
+
+;; Save Org buffers after refiling!
+(advice-add 'org-refile :after 'org-save-all-org-buffers)
+
+(setq org-tag-alist
+    '((:startgroup)
+       ; Put mutually exclusive tags here
+       (:endgroup)
+       ("@errand" . ?E)
+       ("@home" . ?H)
+       ("@work" . ?W)
+       ("agenda" . ?a)
+       ("planning" . ?p)
+       ("publish" . ?P)
+       ("batch" . ?b)
+       ("note" . ?n)
+       ("idea" . ?i)))
+
+;; Configure custom agenda views
+(setq org-agenda-custom-commands
+   '(("d" "Dashboard"
+     ((agenda "" ((org-deadline-warning-days 7)))
+      (todo "NEXT"
+        ((org-agenda-overriding-header "Next Tasks")))
+      (tags-todo "agenda/ACTIVE" ((org-agenda-overriding-header "Active Projects")))))
+
+    ("n" "Next Tasks"
+v     ((todo "NEXT"
+        ((org-agenda-overriding-header "Next Tasks")))))
+
+    ("W" "Work Tasks" tags-todo "+work-email")
+
+    ;; Low-effort next actions
+    ("e" tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"
+     ((org-agenda-overriding-header "Low Effort Tasks")
+      (org-agenda-max-todos 20)
+      (org-agenda-files org-agenda-files)))
+
+    ("w" "Workflow Status"
+     ((todo "WAIT"
+            ((org-agenda-overriding-header "Waiting on External")
+             (org-agenda-files org-agenda-files)))
+      (todo "REVIEW"
+            ((org-agenda-overriding-header "In Review")
+             (org-agenda-files org-agenda-files)))
+      (todo "PLAN"
+            ((org-agenda-overriding-header "In Planning")
+             (org-agenda-todo-list-sublevels nil)
+             (org-agenda-files org-agenda-files)))
+      (todo "BACKLOG"
+            ((org-agenda-overriding-header "Project Backlog")
+             (org-agenda-todo-list-sublevels nil)
+             (org-agenda-files org-agenda-files)))
+      (todo "READY"
+            ((org-agenda-overriding-header "Ready for Work")
+             (org-agenda-files org-agenda-files)))
+      (todo "ACTIVE"
+            ((org-agenda-overriding-header "Active Projects")
+             (org-agenda-files org-agenda-files)))
+      (todo "COMPLETED"
+            ((org-agenda-overriding-header "Completed Projects")
+             (org-agenda-files org-agenda-files)))
+      (todo "CANC"
+            ((org-agenda-overriding-header "Cancelled Projects")
+             (org-agenda-files org-agenda-files)))))))
+
+(setq org-capture-templates
+    `(("t" "Tasks / Projects")
+      ("tt" "Task" entry (file+olp "~/Nextcloud/Documents/org-files/tasks.org" "Inbox")
+           "* TODO %?\n  %U\n  %a\n  %i" :empty-lines 1)
+
+      ("j" "Journal Entries")
+      ("jj" "Journal" entry
+           (file+olp+datetree "~/Nextcloud/Documents/org-files/journal.org")
+           "\n* %<%I:%M %p> - Journal :journal:\n\n%?\n\n"
+           ;; ,(dw/read-file-as-string "~/Notes/Templates/Daily.org")
+           :clock-in :clock-resume
+           :empty-lines 1)
+      ("jm" "Meeting" entry
+           (file+olp+datetree "~/Nextcloud/Documents/org-files/journal.org")
+           "* %<%I:%M %p> - %a :meetings:\n\n%?\n\n"
+           :clock-in :clock-resume
+           :empty-lines 1)
+
+      ("w" "Workflows")
+      ("we" "Checking Email" entry (file+olp+datetree "~/Nextcloud/Documents/org-files/journal.org")
+           "* Checking Email :email:\n\n%?" :clock-in :clock-resume :empty-lines 1)
+
+      ("m" "Metrics Capture")
+      ("mw" "Weight" table-line (file+headline "~/Nextcloud/Documents/org-files/metrics.org" "Weight")
+       "| %U | %^{Weight} | %^{Notes} |" :kill-buffer t)
+      ("e" "EWW article"
+           entry
+           (file "~/Nextcloud/Documents/org-files/web.org")
+           "* %a\n:PROPERTIES:\n:URL: %u\n:END:\n\n%?"
+           :empty-lines 1)))
+
+(require 'org-tempo)
+
+(add-to-list 'org-structure-template-alist '("sh" . "src shell"))
+(add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
+(add-to-list 'org-structure-template-alist '("py" . "src python"))
+(add-to-list 'org-structure-template-alist '("rs" . "src rust"))
+
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((emacs-lisp . t)
+   (python . t)))
+
+(defun max/org-babel-tangle-config ()
+  (when (string-equal (buffer-file-name)
+		      (expand-file-name "~/.emacs.d/config.org"))
+    (let ((org-confirm-babel-evaluate nil))
+      (org-babel-tangle))))
+
+(add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'max/org-babel-tangle-config)))
+
+(use-package org-tree-slide
+  :custom
+  (org-image-actual-width nil))
+
+(require 'org-eww)
+
+(defun efs/lsp-mode-setup ()
+  (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
+  (lsp-headerline-breadcrumb-mode))
+
+(use-package lsp-mode
+  :commands (lsp lsp-deferred)
+  :hook (lsp-mode . efs/lsp-mode-setup)
+  :init
+  (setq lsp-keymap-prefix "C-c l")
+  :config
+  (lsp-enable-which-key-integration t))
+
+(use-package lsp-ui
+  :hook (lsp-mode . lsp-ui-mode))
+
+(use-package lsp-treemacs
+  :after lsp)
+
+(use-package lsp-ivy)
+
+(max/leader-keys
+  "d" '(lsp-ui-doc-show :which-key "show symbol doc"))
+
+(use-package company
+  :after lsp-mode
+  :hook (lsp-mode . company-mode)
+  :bind (:map company-active-map
+	  ("<tab>" . company-complete-selection))
+        (:map lsp-mode-map
+	  ("<tab>" . company-indent-or-complete-common))
+  :custom
+  (company-minimum-prefix-length 1)
+  (company-idle-delay 0.0))
+
+(use-package company-box
+  :hook (company-mode . company-box-mode))
+
+(use-package projectile
+  :diminish projectile-mode
+  :config (projectile-mode)
+  :bind-keymap
+  ("C-c p" . projectile-command-map)
+  :init
+  (when (file-directory-p "~/Documents/Projects")
+    (setq projectile-project-search-path '("~/Documents/Projects")))
+  (setq projectile-switch-project-action #'projectile-dired))
+
+(use-package counsel-projectile
+  :config (counsel-projectile-mode))
+
+(use-package magit
+  :custom
+  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
+  )
+
+(use-package elisp-mode
+  :ensure nil
+  :hook ((emacs-lisp-mode . flymake-mode)
+         (emacs-lisp-mode . eldoc-mode)))
+
+(use-package python-mode
+  :hook (python-mode . lsp-deferred)
+  :config
+  (setq python-shell-interpreter "python3"))
+
+(use-package rust-mode
+  :hook (rust-mode . lsp-deferred)
+  :config
+  (setq rust-format-on-save t))
+
+(use-package sh-script
+  :hook (sh-mode . lsp-deferred))
+
+(use-package rainbow-delimiters
+  :hook (prog-mode . rainbow-delimiters-mode))
+
+;; Use a custom file so that emacs doesn't write in init.el
+(setq custom-file "~/.config/emacs/.emacs.custom")
+(load-file custom-file)
+
+(setq org-refile-targets
+    '(("archive.org" :maxlevel . 1)
+      ("tasks.org" :maxlevel . 1)))
+
+(use-package term
+  :config
+  (setq explicit-shell-file-name "bash")
+  (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *"))
+
+(use-package vterm
+  :commands vterm
+  :config
+  (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")
+  (setq vterm-max-scrollback 10000))
+
+(use-package eww
+  :commands (eww eww-open-file)
+  :init
+  (setq eww-search-prefix "https://www.duckduckgo.com/search?q="
+        eww-download-directory "~/downloads"
+        shr-color-visible-luminance-min 80)
+
+  :config
+
+  ;; ----------------------------
+  ;; Search at point / region
+  ;; ----------------------------
+  (defun max/eww-search-at-point ()
+    "Search region or symbol at point."
+    (interactive)
+    (let ((query
+           (cond
+            ((use-region-p)
+             (buffer-substring-no-properties
+              (region-beginning) (region-end)))
+            ((thing-at-point 'symbol t))
+            (t nil))))
+      (if (and query (not (string-blank-p query)))
+          (eww query)
+        (call-interactively #'eww))))
+
+  ;; ----------------------------
+  ;; Force new buffer with C-u
+  ;; ----------------------------
+  (defun max/eww-new-buffer-advice (orig &rest args)
+    (if current-prefix-arg
+        (with-temp-buffer (apply orig args))
+      (apply orig args)))
+  (advice-add 'eww :around #'max/eww-new-buffer-advice)
+
+  ;; ----------------------------
+  ;; Auto rename buffers
+  ;; ----------------------------
+  (add-hook 'eww-mode-hook
+            (lambda ()
+              (rename-buffer "eww" t)))
+
+  ;; ----------------------------
+  ;; Copy URL (simple + reliable)
+  ;; ----------------------------
+  (defun max/eww-copy-url ()
+    "Copy link at point or page URL."
+    (interactive)
+    (let ((url (or (get-text-property (point) 'shr-url)
+                   (eww-current-url))))
+      (when url
+        (kill-new url)
+        (message "Copied: %s" url))))
+
+  ;; ----------------------------
+  ;; Toggle images
+  ;; ----------------------------
+  (defun max/eww-toggle-images ()
+    (interactive)
+    (setq-local shr-inhibit-images (not shr-inhibit-images))
+    (eww-reload)
+    (message "Images %s"
+             (if shr-inhibit-images "disabled" "enabled")))
+
+  ;; ----------------------------
+  ;; Browse current file in EWW
+  ;; ----------------------------
+  (defun max/eww-browse-file ()
+    (interactive)
+    (let ((browse-url-browser-function #'eww-browse-url))
+      (call-interactively #'browse-url-of-file)))
+
+  ;; ----------------------------
+  ;; Core keybindings
+  ;; ----------------------------
+  (define-key eww-mode-map (kbd "s") #'max/eww-search-at-point)
+  (define-key eww-mode-map (kbd "w") #'max/eww-copy-url)
+  (define-key eww-mode-map (kbd "I") #'max/eww-toggle-images)
+  (define-key eww-mode-map (kbd "h") #'eww-list-histories)
+  (define-key eww-mode-map (kbd ":") #'eww)
+
+  ;; Reload
+  (define-key eww-mode-map [remap revert-buffer] #'eww-reload)
+
+  ;; Navigation
+  (define-key eww-mode-map (kbd "TAB") #'shr-next-link)
+  (define-key eww-mode-map (kbd "<backtab>") #'shr-previous-link)
+)
+
+  ;; Default eww key bindings
+  ;; |-----------+---------------------------------------------------------------------|
+  ;; | Key       | Function                                                            |
+  ;; |-----------+---------------------------------------------------------------------|
+  ;; | &         | Browse the current URL with an external browser.                    |
+  ;; | -         | Begin a negative numeric argument for the next command.             |
+  ;; | 0 .. 9    | Part of the numeric argument for the next command.                  |
+  ;; | C         | Display a buffer listing the current URL cookies, if there are any. |
+  ;; | H         | List the eww-histories.                                             |
+  ;; | F         | Toggle font between variable-width and fixed-width.                 |
+  ;; | G         | Go to a URL                                                         |
+  ;; | R         | Readable mode                                                       |
+  ;; | S         | List eww buffers                                                    |
+  ;; | d         | Download URL under point to `eww-download-directory'.               |
+  ;; | g         | Reload the current page.                                            |
+  ;; | q         | Quit WINDOW and bury its buffer.                                    |
+  ;; | v         | `eww-view-source'                                                   |
+  ;; | w         | `eww-copy-page-url'                                                 |
+  ;; |-----------+---------------------------------------------------------------------|
+  ;; | b         | Add the current page to the bookmarks.                              |
+  ;; | B         | Display the bookmark list.                                          |
+  ;; | M-n       | Visit the next bookmark                                             |
+  ;; | M-p       | Visit the previous bookmark                                         |
+  ;; |-----------+---------------------------------------------------------------------|
+  ;; | t         | Go to the page marked `top'.                                        |
+  ;; | u         | Go to the page marked `up'.                                         |
+  ;; |-----------+---------------------------------------------------------------------|
+  ;; | n         | Go to the page marked `next'.                                       |
+  ;; | p         | Go to the page marked `previous'.                                   |
+  ;; |-----------+---------------------------------------------------------------------|
+  ;; | l         | Go to the previously displayed page.                                |
+  ;; | r         | Go to the next displayed page.                                      |
+  ;; |-----------+---------------------------------------------------------------------|
+  ;; | TAB       | Move point to next link on the page.                                |
+  ;; | S-TAB     | Move point to previous link on the page.                            |
+  ;; |-----------+---------------------------------------------------------------------|
+  ;; | SPC       | Scroll up                                                           |
+  ;; | DEL/Bkspc | Scroll down                                                         |
+  ;; | S-SPC     | Scroll down                                                         |
+  ;; |-----------+---------------------------------------------------------------------|
+
+(use-package eww-lnum
+  :after eww
+  :bind (:map eww-mode-map
+              ("f" . eww-lnum-follow)
+              ("F" . eww-lnum-universal)))
+
+(use-package password-store)
+
+(use-package pass
+  :after password-store
+  :commands (pass))
