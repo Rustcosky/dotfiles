@@ -7,14 +7,25 @@ Currenty, this leads to just one long init.el containing the code blocks of this
 
 This is work in progress, a lot can be improved.
 
+* Path
+
+For convenience, we start by setting some file system path related variables. [[elisp:(describe-variable 'user-emacs-directory)][user-emacs-directory]] contains the path assigned to the local Emacs installation.
+
+#+begin_src emacs-lisp
+  (defvar non-repo-lisp-packages-path (concat user-emacs-directory "lisp/"))
+#+end_src
+
+
 * Package Mangement
+
+Before packages are even loaded, their management must be configured a little. The standard [[https://elpa.gnu.org][ELPA]] (Emacs Lisp Package Archive) repository is a bit barren in comparison. We add the very common additional repositories [[https://melpa.org][MELPA]] (Milkypostman's Emacs Lisp Package Archive) and the repo for the  infamous [[https://orgmode.org][Org]] package.
 
 #+begin_src emacs-lisp
   (require 'package)
 
-  (setq package-archives '(("melpa" . "https://melpa.org/packages/")
-  			 ("org" . "https://orgmode.org/elpa/")
-  			 ("elpa" . "https://elpa.gnu.org/packages/")))
+  (setq package-archives '(("elpa" . "https://elpa.gnu.org/packages/")
+  			 ("melpa" . "https://melpa.org/packages/")
+  			 ("org" . "https://orgmode.org/elpa/")))
 
   (package-initialize)
   (unless package-archive-contents
@@ -27,18 +38,27 @@ This is work in progress, a lot can be improved.
   (require 'use-package)
   (setq use-package-always-ensure t)
 
-  (add-to-list 'load-path "~/.emacs.d/lisp/")
+  ;; Add local path to Emacs packages not managed by one of the repos above
+  (add-to-list 'load-path non-repo-lisp-packages-path)
+  (add-to-list 'load-path (concat non-repo-lisp-packages-path "assist_emacs")) ;; my own package
 #+end_src
+
 
 * General
 
+This sections contains settings for how and where Emacs saves automatically generated files, deals with persisting the history, etc.
+
+** No Littering
+
+The package [[https://github.com/emacscollective/no-littering][No Littering]] helps keep the Emacs folders clean from automatically generated files. So far, this is just the default configuration and should be changed later.
+
 #+begin_src emacs-lisp
-  (setq display-buffer-alist '(("\\`\\*e?shell" display-buffer-pop-up-window)
-                              ("\\`\\*shell" display-buffer-pop-up-window)
-                              ("\\`\\*term" display-buffer-pop-up-window)))
+  (use-package no-littering)
 #+end_src
 
 ** Save History
+
+With safehist, we ensure the minibuffer history is persisted.
 
 #+begin_src emacs-lisp
   (use-package savehist
@@ -47,17 +67,23 @@ This is work in progress, a lot can be improved.
     (savehist-mode))
 #+end_src
 
-* Appearence
-This section contains the setup ...
+** Tab Bar
+
+We can configure the way Emacs uses the tab system quiet extensively. For now, this just ensures that the [[Dashboard]] is shown in any new tab.
 
 #+begin_src emacs-lisp
-  ;; Define function to toggle fullscreen and bind F11 to it
-  (defun fullscreen ()
-    (interactive)
-    (set-frame-parameter nil 'fullscreen
-      (if (frame-parameter nil 'fullscreen) nil 'fullboth)))
+(setq tab-bar-new-tab-choice "*dashboard*")
+#+end_src
 
-  (fullscreen)
+
+* Appearence
+
+This section contains everything regarding how Emacs looks.
+
+The following are essentially infamous default settings.
+
+#+begin_src emacs-lisp
+  (toggle-frame-fullscreen)
 
   (tool-bar-mode 0)
   (menu-bar-mode 0)
@@ -72,11 +98,20 @@ This section contains the setup ...
 #+end_src
 
 ** Themes
-Configurations for themes go here. Currently, I only use one which comes from the [[https://github.com/doomemacs/themes][doom-themes]] package.
+
+Configurations for themes go here. I've tried themes from the [[https://github.com/doomemacs/themes][doom-themes]] and [[https://github.com/bbatsov/zenburn-emacs][zenburn]] packages. But for my current display (which doesn't have the greatest contrast, rendering a lot of "easy on the eyes"-themes a little hard to read), I found the hard [[https://github.com/greduan/emacs-theme-gruvbox][gruvbox]] fitting.
 
 #+begin_src emacs-lisp
-  (use-package doom-themes
-  :init (load-theme 'doom-outrun-electric t))
+  ;;(use-package doom-themes
+  ;;:init (load-theme 'doom-outrun-electric t))
+
+  ;;(use-package zenburn-theme
+  ;;  :config
+  ;;  (load-theme 'zenburn t))
+  
+  (use-package gruvbox-theme
+    :config
+    (load-theme 'gruvbox-dark-hard t))
 #+end_src
 
 ** Fonts
@@ -90,10 +125,10 @@ These are just fonts from some tutorials. I should make a more informed choice a
 #+end_src
 
 ** Column Numbering
+
 Ensure that column lines are shown except in org mode, shells and terminals as well as treeviews.
 
 #+begin_src emacs-lisp
-  ;; Enable display of line numbers
   (column-number-mode 1)
   (global-display-line-numbers-mode t)
 
@@ -108,33 +143,91 @@ Ensure that column lines are shown except in org mode, shells and terminals as w
 
 ** Command Log Mode
 
+The [[https://github.com/lewang/command-log-mode][Command Log Mode]] can display the event and command history of buffers. I use it mostly for learning purposes.
+
 #+begin_src emacs-lisp
   (use-package command-log-mode)
 #+end_src
 
-** Icons
-*** All The Icon
-The package ... Requires to run ... once.
+** Rainbow Delimiter
+
+[[https://github.com/Fanael/rainbow-delimiters][Rainbow Delimiters]] color brackets by pairing.
+
 #+begin_src emacs-lisp
-  (use-package all-the-icons)
+  (use-package rainbow-delimiters
+    :hook (prog-mode . rainbow-delimiters-mode))
 #+end_src
 
+** Icons
+
+Some graphical symbols that are useful are not included out-of-the-box and need to be added manually.
+
+*** All The Icon
+With [[https://github.com/domtronn/all-the-icons.el][All The Icons]], we can access a sizable set of general purpose icons.
+
+#+begin_src emacs-lisp
+  (use-package all-the-icons
+    :if (display-graphic-p))
+#+end_src
+
+Using it requires to run `M-x all-the-icons-install-fonts` once after installation.
+
+** Dashboard
+
+The [[https://github.com/emacs-dashboard/dashboard][Dashboard]] package displays a customizable dashboard on startup.
+
+#+begin_src emacs-lisp
+  (use-package dashboard
+    :config
+    (setq dashboard-banner-logo-title "Welcome")
+    (setq dashboard-startup-banner "~/.emacs.d/logos/emax.png")
+    (setq dashboard-center-content t)
+    (setq dashboard-vertical-center-content t)
+    (setq dashboard-items '((recents . 5)
+  			  (bookmarks . 5)
+  			  (projects . 5)
+  			  (agenda . 5)
+  			  (registers . 5)))
+    (setq dashboard-navigation-cycle t)
+    (setq dashboard-item-shortcuts '((recents   . "r")
+                                     (bookmarks . "m")
+                                     (projects  . "p")
+                                     (agenda    . "a")
+                                     (registers . "e")))
+    (setq dashboard-display-icons-p t)
+    (setq dashboard-icon-type 'nerd-icons)
+    (setq dashboard-set-heading-icons t)
+    (setq dashboard-set-file-icons t)
+    (dashboard-setup-startup-hook))
+#+end_src
+
+
 * File Management
+
+Emacs can also function as a powerful file manager.
+
 ** Dired
+
+Nothing interesting here. In newer Emacs versions, [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Dired.html][dired]] is already included. I just use it with default configurations right now, so the following code doesn't really do anything yet. It's just a placeholder.
 
 #+begin_src emacs-lisp
   (use-package dired
     :ensure nil)
 #+end_src
 
+
 * Keybindings
 
+Emacs is all about keybindings. So this is an important sections!
+
 #+begin_src emacs-lisp
-  ;; Make ESC quit prompts
   (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+  (global-set-key (kbd "M-o") 'other-window)  
 #+end_src
 
 ** General
+
+For custom key definitions, the [[https://github.com/noctuid/general.el][General]] provides a very convenient interface. I use `C-q` as a leader key for my custom commands.
 
 #+begin_src emacs-lisp
   (use-package general
@@ -150,6 +243,8 @@ The package ... Requires to run ... once.
 
 ** Hydra
 
+[[https://github.com/abo-abo/hydra][Hydra]] is a wonderful interface for families of keybindings.
+
 #+begin_src emacs-lisp
   (use-package hydra)
 
@@ -162,8 +257,25 @@ The package ... Requires to run ... once.
   (max/leader-keys
     "ts" '(hydra-text-scale/body :which-key "scale text"))
 #+end_src
+
+
 * UI Configuration
+
+The number of ways in which the Emacs UI can be configured can not by known by mortals...
+
+#+begin_src emacs-lisp
+  (setq display-buffer-alist '(("\\`\\*e?shell" display-buffer-pop-up-window)
+                               ("\\`\\*shell" display-buffer-pop-up-window)
+                               ("\\`\\*term" display-buffer-pop-up-window)))
+  
+  (with-eval-after-load 'ispell
+     (remove-hook 'completion-at-point-functions
+                  #'ispell-completion-at-point))
+#+end_src
+
 ** Modeline
+
+[[https://github.com/seagle0128/doom-modeline][doom-modeline]]
 
 #+begin_src emacs-lisp
   (use-package doom-modeline
@@ -172,6 +284,8 @@ The package ... Requires to run ... once.
 #+end_src
 
 ** Which Key
+
+To better explore and remember keybindings, we can see ... with the [[https://github.com/justbur/emacs-which-key][which-key]] package.
 
 #+begin_src emacs-lisp
   (use-package which-key
@@ -182,6 +296,8 @@ The package ... Requires to run ... once.
 #+end_src
 
 ** Ivy
+
+On [[https://github.com/abo-abo/swiper#ivy][Ivy]]
 
 #+begin_src emacs-lisp
   (use-package ivy
@@ -218,6 +334,8 @@ The package ... Requires to run ... once.
 
 ** Counsel
 
+[[https://github.com/abo-abo/swiper#counsel][Counsel]]
+
 #+begin_src emacs-lisp
   (use-package counsel
     :bind (("M-x" . counsel-M-x)
@@ -235,6 +353,8 @@ The package ... Requires to run ... once.
 
 ** Helpful
 
+[[https://github.com/Wilfred/helpful][Helpful]]
+
 #+begin_src emacs-lisp
   (use-package helpful
     :custom
@@ -247,15 +367,25 @@ The package ... Requires to run ... once.
     ([remap describe-key] . helpful-key))
 #+end_src
 
+
 * Org Mode
+
+The infamous [[https://orgmode.org/][Org Mode]] is arguably the best way to organize absolutely anything!
+
 ** Appearance
 
 #+begin_src emacs-lisp
+  (defun max/org-remove-ispell-capf ()
+  (setq-local completion-at-point-functions
+              (remove #'ispell-completion-at-point
+                      completion-at-point-functions)))
+
   (defun max/org-mode-setup ()
     (org-indent-mode)
     (variable-pitch-mode 1)
     (auto-fill-mode 0)
-    (visual-line-mode 1))
+    (visual-line-mode 1)
+    (max/org-remove-ispell-capf))
 
   (use-package org
     :hook (org-mode . max/org-mode-setup)
@@ -265,6 +395,8 @@ The package ... Requires to run ... once.
   	org-log-done 'time
   	org-log-into-drawer t
   	org-hide-emphasis-markers t
+  	org-startup-folded t
+  	org-hide-drawer-startup t
   	org-agenda-files
   	'("~/Nextcloud/Documents/org-files/tasks.org"
   	  "~/Nextcloud/Documents/org-files/habits.org"))
@@ -272,13 +404,13 @@ The package ... Requires to run ... once.
     (add-to-list 'org-modules 'org-habit)
     (setq org-habit-graph-column 60))
 
-  (use-package org-bullets
-    :after org
-    :hook (org-mode . org-bullets-mode))
+  ;; (use-package org-bullets
+  ;;   :after org
+  ;;   :hook (org-mode . org-bullets-mode))
 
-  (font-lock-add-keywords 'org-mode
-  			'(("^ *\\([-]\\) "
-  			  (0 (prog1 () (compose-region (match-beginning 1)(match-end 1) "•"))))))
+  ;; (font-lock-add-keywords 'org-mode
+  ;; 			'(("^ *\\([-]\\) "
+  ;; 			  (0 (prog1 () (compose-region (match-beginning 1)(match-end 1) "•"))))))
 
   (with-eval-after-load 'org-faces (dolist (face '((org-level-1 . 1.2)
   	        (org-level-2 . 1.1)
@@ -305,6 +437,16 @@ The package ... Requires to run ... once.
 
   (use-package visual-fill-column
     :hook (org-mode . max/org-mode-visual-fill))
+
+  (remove-hook 'completion-at-point-functions
+             #'ispell-completion-at-point)
+#+end_src
+
+*** Org Modern
+
+#+begin_src emacs-lisp
+  (use-package org-modern
+    :hook (org-mode . org-modern-mode))
 #+end_src
 
 ** Tasks, Agendas and Tags
@@ -388,6 +530,44 @@ The package ... Requires to run ... once.
 ** Templates
 
 #+begin_src emacs-lisp
+  (defvar my-org-language-directory
+    "~/Nextcloud/Documents/org-files/languages/")
+
+  (defvar my-org-last-language nil)
+
+  (defun my-org-language-files ()
+    (mapcar
+      (lambda (file)
+      (file-name-base file))
+    (directory-files
+      (expand-file-name my-org-language-directory)
+      t
+      "\\.org\\'")))
+
+  (defun my-org-select-language ()
+    (let* ((langs (my-org-language-files))
+         (default (or my-org-last-language
+                      (car langs)))
+         (choice
+          (completing-read
+           "Language: "
+           langs
+           nil
+           t
+           nil
+           nil
+           default)))
+    (setq my-org-last-language choice)
+      choice))
+
+  (defun my-org-capture-anki-basic ()
+    (let* ((lang (my-org-select-language))
+           (file (expand-file-name
+                  (concat lang ".org")
+                  my-org-language-directory)))
+      (org-capture-set-target-location
+       `(file+headline ,file "Basics"))))
+  
   (setq org-capture-templates
       `(("t" "Tasks / Projects")
         ("tt" "Task" entry (file+olp "~/Nextcloud/Documents/org-files/tasks.org" "Inbox")
@@ -406,6 +586,10 @@ The package ... Requires to run ... once.
              :clock-in :clock-resume
              :empty-lines 1)
 
+        ("v" "Vocabulary")
+        ("vb" "Basic" entry (function my-org-capture-anki-basic)
+  	 "* %^{Front}\n:PROPERTIES:\n:ANKI_NOTE_TYPE: Basic\n:END:\n\n%^{Back}\n\n")
+        
         ("w" "Workflows")
         ("we" "Checking Email" entry (file+olp+datetree "~/Nextcloud/Documents/org-files/journal.org")
              "* Checking Email :email:\n\n%?" :clock-in :clock-resume :empty-lines 1)
@@ -433,7 +617,8 @@ The package ... Requires to run ... once.
   (org-babel-do-load-languages
    'org-babel-load-languages
    '((emacs-lisp . t)
-     (python . t)))
+     (python . t)
+     (mermaid t)))
 #+end_src
 
 *** Tangling
@@ -441,11 +626,19 @@ The package ... Requires to run ... once.
 #+begin_src emacs-lisp
   (defun max/org-babel-tangle-config ()
     (when (string-equal (buffer-file-name)
-  		      (expand-file-name "~/.emacs.d/config.org"))
+  		      (expand-file-name "~/Documents/Projects/dotfiles/.emacs.d/config.org"))
       (let ((org-confirm-babel-evaluate nil))
         (org-babel-tangle))))
 
   (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'max/org-babel-tangle-config)))
+#+end_src
+
+*** Mermaid
+
+#+begin_src emacs-lisp
+  (use-package ob-mermaid
+    :config
+    (setq ob-mermaid-default-config-file "~/.config/mermaid/mermaid-config.js"))
 #+end_src
 
 ** Treeslide
@@ -456,14 +649,60 @@ The package ... Requires to run ... once.
     (org-image-actual-width nil))
 #+end_src
 
+** Org Roam
+
+#+begin_src emacs-lisp
+  (defun org-roam-gaph--view (file)
+    (find-file file))
+
+  (use-package org-roam
+    :custom
+    (org-roam-directory "~/Nextcloud/Documents/org-files/roam")
+    :bind (("C-c n l" . org-roam-buffer-toggle)
+           ("C-c n f" . org-roam-node-find)
+           ("C-c n g" . org-roam-graph)
+           ("C-c n i" . org-roam-node-insert)
+           ("C-c n c" . org-roam-capture)
+           ;; Dailies
+           ("C-c n j" . org-roam-dailies-capture-today)
+  	 :map org-mode-map
+  	 ("C-M-i" . completion-at-point))
+    :config
+    (setq org-roam-completion-everywhere t)
+    (setq org-roam-graph-viewer #'org-roam-graph--view)
+    (org-roam-db-autosync-mode))
+#+end_src
+
+*** Org Roam UI
+
+#+begin_src emacs-lisp
+    (use-package websocket
+      :after org-roam)
+
+  (use-package org-roam-ui
+      :after org-roam
+      :config
+      (setq org-roam-ui-sync-theme t
+            org-roam-ui-follow t
+            org-roam-ui-update-on-save t
+            org-roam-ui-open-on-start t))
+#+end_src
+
+
 ** Org Eww
 
 #+begin_src emacs-lisp
   (require 'org-eww)
 #+end_src
 
+
 * Development
+
+Configurations for everything coding-related.
+
 ** LSP
+
+No modern code editor is complete without prober LSP (Language Server Protocol) support for all or fancy debugging, autocompletion and so on. This is exactly what  [[https://github.com/emacs-lsp/lsp-mode][lsp-mode]] provides.
 
 #+begin_src emacs-lisp
   (defun efs/lsp-mode-setup ()
@@ -491,6 +730,7 @@ The package ... Requires to run ... once.
 #+end_src
 
 ** Company Mode
+For autocompletion in lsp-mode, I use [[https://github.com/company-mode/company-mode][Company]] (*comp* lete *any* thing).
 
 #+begin_src emacs-lisp
   (use-package company
@@ -502,13 +742,16 @@ The package ... Requires to run ... once.
   	  ("<tab>" . company-indent-or-complete-common))
     :custom
     (company-minimum-prefix-length 1)
-    (company-idle-delay 0.0))
-
+    (company-idle-delay 0.0)
+    (company-backends '(company-capf company-files company-keywords)))
+  
   (use-package company-box
     :hook (company-mode . company-box-mode))
 #+end_src
 
 ** Projectile
+
+[[https://github.com/bbatsov/projectile][Projectile]] for project interactions.
 
 #+begin_src emacs-lisp
   (use-package projectile
@@ -527,15 +770,30 @@ The package ... Requires to run ... once.
 
 ** Magit
 
+[[https://magit.vc/][Magit]] (of which the opinions on how to pronounce it vary) is amazing git porcelain!
+
 #+begin_src emacs-lisp
   (use-package magit
     :custom
-    (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
-    )
+    (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+#+end_src
+
+*** Ediff
+
+Configure how Magit handles diffs.
+
+#+begin_src emacs-lisp
+  (setq magit-ediff-dwim-show-on-hunks t)
+  (custom-set-variables '(ediff-split-window-function (quote split-window-horizontally)))
 #+end_src
 
 ** Language
+
+For each language we code in, we need to set up the appropriate [[LSP]] configurations.
+
 *** Emacs Lisp
+
+Due to Emacs inherent Lisp nature, the elisp-mode is naturally shipped with vanilla Emacs.
 
 #+begin_src emacs-lisp
   (use-package elisp-mode
@@ -546,6 +804,8 @@ The package ... Requires to run ... once.
 
 *** Python
 
+[[https://github.com/emacsmirror/python-mode][python-mode]]
+
 #+begin_src emacs-lisp
   (use-package python-mode
     :hook (python-mode . lsp-deferred)
@@ -554,6 +814,8 @@ The package ... Requires to run ... once.
 #+end_src
 
 *** Rust
+
+[[https://github.com/rust-lang/rust-mode][rust-mode]]
 
 #+begin_src emacs-lisp
   (use-package rust-mode
@@ -564,21 +826,21 @@ The package ... Requires to run ... once.
 
 *** Bash
 
+Shell script support is also build-in!
+
 #+begin_src emacs-lisp
   (use-package sh-script
     :hook (sh-mode . lsp-deferred))
 #+end_src
 
-** Programming-Specific Appearance
-*** Rainbow Delimiter
 
-#+begin_src emacs-lisp
-  (use-package rainbow-delimiters
-    :hook (prog-mode . rainbow-delimiters-mode))
-#+end_src
+* Files and Such
 
-* External Files
+Everything regaring file configurations.
+
 ** Custom File
+
+I don't really use the interfaces that causes Emacs to persist configurations in the init.el file. But, just in case, the following sets up a different file for these changes (which would otherwise be annoying and conflict with the tangling configuration of this org file).
 
 #+begin_src emacs-lisp
   ;; Use a custom file so that emacs doesn't write in init.el
@@ -588,14 +850,22 @@ The package ... Requires to run ... once.
 
 ** Refile Targets
 
+In [[Org Mode]], we often refile notes, specifically tasks, to other files. Which files these are need to be set up manually.
+
 #+begin_src emacs-lisp
   (setq org-refile-targets
       '(("archive.org" :maxlevel . 1)
         ("tasks.org" :maxlevel . 1)))
 #+end_src
 
+
 * Applications
+
+Emacs can interface with a variety of other applications.
+
 ** Term
+
+[[https://www.gnu.org/software/emacs/manual/html_node/emacs/Terminal-emulator.html][Term]]
 
 #+begin_src emacs-lisp
   (use-package term
@@ -606,6 +876,8 @@ The package ... Requires to run ... once.
 
 ** VTerm
 
+[[https://github.com/akermu/emacs-libvterm][VTerm]]
+
 #+begin_src emacs-lisp
   (use-package vterm
     :commands vterm
@@ -614,7 +886,59 @@ The package ... Requires to run ... once.
     (setq vterm-max-scrollback 10000))
 #+end_src
 
+** Anki
+
+Obviously, we also want to manage our [[https://github.com/akermu/emacs-libvterm][Anki]] cards with Emacs. A neat package for this, that even integrates with the Anki desktop app, is [[https://github.com/akermu/emacs-libvterm][anki-editor]].
+
+#+begin_src emacs-lisp
+  (use-package anki-editor)
+#+end_src
+
+** EBDB
+
+[[https://github.com/girzel/ebdb][EBDB]]
+
+#+begin_src emacs-lisp
+  (use-package ebdb
+    :ensure t
+    :defer t
+    :init
+    (setq ebdb-sources '("~/Nextcloud/emacs/edbd"))
+    (setq ebdb-complete-mail t
+          ebdb-complete-name t)
+    :config
+    (setq ebdb-default-window-size 0.3
+          ebdb-multiline t)
+    (setq ebdb-auto-save-p t)
+    (require 'edbd-vcard))
+#+end_src
+
+*** Company integration
+
+Company integration for EBDB.
+
+#+begin_src emacs-lisp
+  (use-package company-ebdb
+    :ensure t
+    :after (ebdb company)
+    :config
+    (add-to-list 'company-backends 'company-ebdb))
+#+end_src
+
+*** Ivy-Prescient
+
+Ivy integration for EBDB.
+
+#+begin_src emacs-lisp
+  (use-package ivy-prescient
+    :after ivy
+    :config
+    (ivy-prescient-mode 1))
+#+end_src
+
 ** EWW (Browser)
+
+Emacs has a build-in browser called [[https://www.gnu.org/software/emacs/manual/html_mono/eww.html][EWW]]. It is pretty convenient for some text-heavy pages like wikipedia. But since it can't execute JS, it's quite limited.
 
 #+begin_src emacs-lisp
   (use-package eww
@@ -747,7 +1071,10 @@ The package ... Requires to run ... once.
     ;; | S-SPC     | Scroll down                                                         |
     ;; |-----------+---------------------------------------------------------------------|
 #+end_src
+
 *** EWW LNUM
+
+[[https://github.com/m00natic/eww-lnum][eww-lnum]]
 
 #+begin_src emacs-lisp
   (use-package eww-lnum
@@ -756,7 +1083,10 @@ The package ... Requires to run ... once.
                 ("f" . eww-lnum-follow)
                 ("F" . eww-lnum-universal)))
 #+end_src
+
 ** Pass
+
+With [[https://github.com/NicolasPetton/pass][pass]], we can easily manage our passwords without leaving Emacs (With the eponymous standard unix password manager [[https://www.passwordstore.org/][pass]]. In case I ever want to use this on non-unix systems like Windows, I need to figure out something else here). Requires [[https://github.com/emacsmirror/password-store][password-store]].
 
 #+begin_src emacs-lisp
 (use-package password-store)
@@ -766,3 +1096,93 @@ The package ... Requires to run ... once.
   :commands (pass))
 #+end_src
 
+** Email
+
+Emacs integration for mu.
+
+Requires isync:
+
+#+begin_src shell :tangle no
+sudo apt install isync
+#+end_src
+
+Before using mu4e, the setup requires an initial sync:
+
+#+begin_src shell :tangle no
+  mbsync -a
+#+end_src
+
+Requires mu:
+
+#+begin_src shell :tangle no
+  sudo apt install mu
+  mu init --maildir=~/Mail --my-address=maximilian.muehlbauer@gmx.net
+#+end_src
+
+This contains the Emacs integration mu4e already. Therefore, the use-package config below sets ensure to nil. For keeping versions of mu and mu4e in sync, it is better to use the systems package manager.
+
+#+begin_src emacs-lisp
+  (use-package mu4e
+    :ensure nil
+    :load-path "~/mu/mu4e/"
+    :config
+    (setq mail-user-agent 'mu4e)
+
+    (setq mu4e-mu-binary "~/mu/build/mu/mu")
+    (setq mu4e-change-filenames-when-moving t)
+
+    (setq mu4e-update-interval (* 3 60))     ;; Update every 3 minutes
+    (setq mu4e-get-mail-command "mbsync -a")
+    (setq mu4e-index-lazy-check t)
+    (setq mu4e-maildir "~/Mail")
+    
+    (setq mu4e-drafts-folder "/gmx/Drafts")
+    (setq mu4e-sent-folder "/gmx/Sent")
+    (setq mu4e-refile-folder "/gmx/Archiv")
+    (setq mu4e-trash-folder "/gmx/Trash")
+
+    (setq mu4e-maildir-shortcuts
+  	'(("/gmx/INBOX"   . ?i)
+  	  ("/gmx/Sent"    . ?s)
+  	  ("/gmx/Trash"   . ?t)
+  	  ("/gmx/Drafts"  . ?d)
+  	  ("/gmx/Archive" . ?a)))
+
+    (setq mu4e-use-fancy-chars t)
+
+    :hook
+    ;; tweak the composer
+    ((mu4e-compose-mode . (lambda ()
+                            (set-fill-column 72)
+                            (flyspell-mode)))
+     ;; allow for inserting attachments with dired,
+     ;;   with `M-x gnus-dired-attach'
+     (dired-mode  . turn-on-gnus-dired-mode))
+
+    :bind ;; the Mu4e transient menu
+    (("C-c m" . mu4e)))
+#+end_src
+
+** TeleAga
+
+This is where the Telegram chat integration goes (not implemented yet). The relevant package is [[https://github.com/zevlg/telega.el][Telega]].
+
+#+begin_src emacs-lisp
+
+#+end_src
+
+** Knowledge Graph Assist
+
+This is a custom package for interfacing with an [[https://arxiv.org/pdf/2603.06290][EpisTwin]]-based AI-assistance framework I'm working on. Commented out until done.
+
+#+begin_src emacs-lisp
+
+;;  (require 'kg)
+
+;;  (setq kg-backend-url "http://localhost:3000")
+
+;;  (setq kg-auto-process nil)
+
+;;  (kg-initialize)
+
+#+end_src

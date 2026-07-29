@@ -1,8 +1,10 @@
+(defvar non-repo-lisp-packages-path (concat user-emacs-directory "lisp/"))
+
 (require 'package)
 
-(setq package-archives '(("melpa" . "https://melpa.org/packages/")
-			 ("org" . "https://orgmode.org/elpa/")
-			 ("elpa" . "https://elpa.gnu.org/packages/")))
+(setq package-archives '(("elpa" . "https://elpa.gnu.org/packages/")
+			 ("melpa" . "https://melpa.org/packages/")
+			 ("org" . "https://orgmode.org/elpa/")))
 
 (package-initialize)
 (unless package-archive-contents
@@ -15,24 +17,20 @@
 (require 'use-package)
 (setq use-package-always-ensure t)
 
-(add-to-list 'load-path "~/.emacs.d/lisp/")
+;; Add local path to Emacs packages not managed by one of the repos above
+(add-to-list 'load-path non-repo-lisp-packages-path)
+(add-to-list 'load-path (concat non-repo-lisp-packages-path "assist_emacs")) ;; my own package
 
-(setq display-buffer-alist '(("\\`\\*e?shell" display-buffer-pop-up-window)
-                            ("\\`\\*shell" display-buffer-pop-up-window)
-                            ("\\`\\*term" display-buffer-pop-up-window)))
+(use-package no-littering)
 
 (use-package savehist
   :config
   (add-to-list 'savehist-additional-variables 'eww-history)
   (savehist-mode))
 
-;; Define function to toggle fullscreen and bind F11 to it
-(defun fullscreen ()
-  (interactive)
-  (set-frame-parameter nil 'fullscreen
-    (if (frame-parameter nil 'fullscreen) nil 'fullboth)))
+(setq tab-bar-new-tab-choice "*dashboard*")
 
-(fullscreen)
+(toggle-frame-fullscreen)
 
 (tool-bar-mode 0)
 (menu-bar-mode 0)
@@ -45,14 +43,21 @@
 (setq inhibit-startup-message t)
 (setq visible-bell t)
 
-(use-package doom-themes
-:init (load-theme 'doom-outrun-electric t))
+;;(use-package doom-themes
+;;:init (load-theme 'doom-outrun-electric t))
+
+;;(use-package zenburn-theme
+;;  :config
+;;  (load-theme 'zenburn t))
+
+(use-package gruvbox-theme
+  :config
+  (load-theme 'gruvbox-dark-hard t))
 
 (set-face-attribute 'default nil :font "Fira Code Retina" :height 120)
 (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height 120)
 (set-face-attribute 'variable-pitch nil :font "Cantarell" :height 140 :weight 'regular)
 
-;; Enable display of line numbers
 (column-number-mode 1)
 (global-display-line-numbers-mode t)
 
@@ -66,13 +71,40 @@
 
 (use-package command-log-mode)
 
-(use-package all-the-icons)
+(use-package rainbow-delimiters
+  :hook (prog-mode . rainbow-delimiters-mode))
+
+(use-package all-the-icons
+  :if (display-graphic-p))
+
+(use-package dashboard
+  :config
+  (setq dashboard-banner-logo-title "Welcome")
+  (setq dashboard-startup-banner "~/.emacs.d/logos/emax.png")
+  (setq dashboard-center-content t)
+  (setq dashboard-vertical-center-content t)
+  (setq dashboard-items '((recents . 5)
+			  (bookmarks . 5)
+			  (projects . 5)
+			  (agenda . 5)
+			  (registers . 5)))
+  (setq dashboard-navigation-cycle t)
+  (setq dashboard-item-shortcuts '((recents   . "r")
+                                   (bookmarks . "m")
+                                   (projects  . "p")
+                                   (agenda    . "a")
+                                   (registers . "e")))
+  (setq dashboard-display-icons-p t)
+  (setq dashboard-icon-type 'nerd-icons)
+  (setq dashboard-set-heading-icons t)
+  (setq dashboard-set-file-icons t)
+  (dashboard-setup-startup-hook))
 
 (use-package dired
   :ensure nil)
 
-;; Make ESC quit prompts
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+(global-set-key (kbd "M-o") 'other-window)
 
 (use-package general
   :config
@@ -94,6 +126,14 @@
 
 (max/leader-keys
   "ts" '(hydra-text-scale/body :which-key "scale text"))
+
+(setq display-buffer-alist '(("\\`\\*e?shell" display-buffer-pop-up-window)
+                             ("\\`\\*shell" display-buffer-pop-up-window)
+                             ("\\`\\*term" display-buffer-pop-up-window)))
+
+(with-eval-after-load 'ispell
+   (remove-hook 'completion-at-point-functions
+                #'ispell-completion-at-point))
 
 (use-package doom-modeline
   :init (doom-modeline-mode 1)
@@ -159,11 +199,17 @@
   ([remap describe-variable] . counsel-describe-variable)
   ([remap describe-key] . helpful-key))
 
+(defun max/org-remove-ispell-capf ()
+(setq-local completion-at-point-functions
+            (remove #'ispell-completion-at-point
+                    completion-at-point-functions)))
+
 (defun max/org-mode-setup ()
   (org-indent-mode)
   (variable-pitch-mode 1)
   (auto-fill-mode 0)
-  (visual-line-mode 1))
+  (visual-line-mode 1)
+  (max/org-remove-ispell-capf))
 
 (use-package org
   :hook (org-mode . max/org-mode-setup)
@@ -173,6 +219,8 @@
 	org-log-done 'time
 	org-log-into-drawer t
 	org-hide-emphasis-markers t
+	org-startup-folded t
+	org-hide-drawer-startup t
 	org-agenda-files
 	'("~/Nextcloud/Documents/org-files/tasks.org"
 	  "~/Nextcloud/Documents/org-files/habits.org"))
@@ -180,13 +228,13 @@
   (add-to-list 'org-modules 'org-habit)
   (setq org-habit-graph-column 60))
 
-(use-package org-bullets
-  :after org
-  :hook (org-mode . org-bullets-mode))
+;; (use-package org-bullets
+;;   :after org
+;;   :hook (org-mode . org-bullets-mode))
 
-(font-lock-add-keywords 'org-mode
-			'(("^ *\\([-]\\) "
-			  (0 (prog1 () (compose-region (match-beginning 1)(match-end 1) "•"))))))
+;; (font-lock-add-keywords 'org-mode
+;; 			'(("^ *\\([-]\\) "
+;; 			  (0 (prog1 () (compose-region (match-beginning 1)(match-end 1) "•"))))))
 
 (with-eval-after-load 'org-faces (dolist (face '((org-level-1 . 1.2)
 	        (org-level-2 . 1.1)
@@ -213,6 +261,12 @@
 
 (use-package visual-fill-column
   :hook (org-mode . max/org-mode-visual-fill))
+
+(remove-hook 'completion-at-point-functions
+           #'ispell-completion-at-point)
+
+(use-package org-modern
+  :hook (org-mode . org-modern-mode))
 
 (setq org-todo-keywords
     '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
@@ -288,6 +342,44 @@ v     ((todo "NEXT"
             ((org-agenda-overriding-header "Cancelled Projects")
              (org-agenda-files org-agenda-files)))))))
 
+(defvar my-org-language-directory
+  "~/Nextcloud/Documents/org-files/languages/")
+
+(defvar my-org-last-language nil)
+
+(defun my-org-language-files ()
+  (mapcar
+    (lambda (file)
+    (file-name-base file))
+  (directory-files
+    (expand-file-name my-org-language-directory)
+    t
+    "\\.org\\'")))
+
+(defun my-org-select-language ()
+  (let* ((langs (my-org-language-files))
+       (default (or my-org-last-language
+                    (car langs)))
+       (choice
+        (completing-read
+         "Language: "
+         langs
+         nil
+         t
+         nil
+         nil
+         default)))
+  (setq my-org-last-language choice)
+    choice))
+
+(defun my-org-capture-anki-basic ()
+  (let* ((lang (my-org-select-language))
+         (file (expand-file-name
+                (concat lang ".org")
+                my-org-language-directory)))
+    (org-capture-set-target-location
+     `(file+headline ,file "Basics"))))
+
 (setq org-capture-templates
     `(("t" "Tasks / Projects")
       ("tt" "Task" entry (file+olp "~/Nextcloud/Documents/org-files/tasks.org" "Inbox")
@@ -306,6 +398,10 @@ v     ((todo "NEXT"
            :clock-in :clock-resume
            :empty-lines 1)
 
+      ("v" "Vocabulary")
+      ("vb" "Basic" entry (function my-org-capture-anki-basic)
+	 "* %^{Front}\n:PROPERTIES:\n:ANKI_NOTE_TYPE: Basic\n:END:\n\n%^{Back}\n\n")
+      
       ("w" "Workflows")
       ("we" "Checking Email" entry (file+olp+datetree "~/Nextcloud/Documents/org-files/journal.org")
            "* Checking Email :email:\n\n%?" :clock-in :clock-resume :empty-lines 1)
@@ -329,19 +425,55 @@ v     ((todo "NEXT"
 (org-babel-do-load-languages
  'org-babel-load-languages
  '((emacs-lisp . t)
-   (python . t)))
+   (python . t)
+   (mermaid t)))
 
 (defun max/org-babel-tangle-config ()
   (when (string-equal (buffer-file-name)
-		      (expand-file-name "~/.emacs.d/config.org"))
+		      (expand-file-name "~/Documents/Projects/dotfiles/.emacs.d/config.org"))
     (let ((org-confirm-babel-evaluate nil))
       (org-babel-tangle))))
 
 (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'max/org-babel-tangle-config)))
 
+(use-package ob-mermaid
+  :config
+  (setq ob-mermaid-default-config-file "~/.config/mermaid/mermaid-config.js"))
+
 (use-package org-tree-slide
   :custom
   (org-image-actual-width nil))
+
+(defun org-roam-gaph--view (file)
+  (find-file file))
+
+(use-package org-roam
+  :custom
+  (org-roam-directory "~/Nextcloud/Documents/org-files/roam")
+  :bind (("C-c n l" . org-roam-buffer-toggle)
+         ("C-c n f" . org-roam-node-find)
+         ("C-c n g" . org-roam-graph)
+         ("C-c n i" . org-roam-node-insert)
+         ("C-c n c" . org-roam-capture)
+         ;; Dailies
+         ("C-c n j" . org-roam-dailies-capture-today)
+	 :map org-mode-map
+	 ("C-M-i" . completion-at-point))
+  :config
+  (setq org-roam-completion-everywhere t)
+  (setq org-roam-graph-viewer #'org-roam-graph--view)
+  (org-roam-db-autosync-mode))
+
+(use-package websocket
+    :after org-roam)
+
+(use-package org-roam-ui
+    :after org-roam
+    :config
+    (setq org-roam-ui-sync-theme t
+          org-roam-ui-follow t
+          org-roam-ui-update-on-save t
+          org-roam-ui-open-on-start t))
 
 (require 'org-eww)
 
@@ -377,7 +509,8 @@ v     ((todo "NEXT"
 	  ("<tab>" . company-indent-or-complete-common))
   :custom
   (company-minimum-prefix-length 1)
-  (company-idle-delay 0.0))
+  (company-idle-delay 0.0)
+  (company-backends '(company-capf company-files company-keywords)))
 
 (use-package company-box
   :hook (company-mode . company-box-mode))
@@ -397,8 +530,10 @@ v     ((todo "NEXT"
 
 (use-package magit
   :custom
-  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
-  )
+  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+
+(setq magit-ediff-dwim-show-on-hunks t)
+(custom-set-variables '(ediff-split-window-function (quote split-window-horizontally)))
 
 (use-package elisp-mode
   :ensure nil
@@ -418,9 +553,6 @@ v     ((todo "NEXT"
 (use-package sh-script
   :hook (sh-mode . lsp-deferred))
 
-(use-package rainbow-delimiters
-  :hook (prog-mode . rainbow-delimiters-mode))
-
 ;; Use a custom file so that emacs doesn't write in init.el
 (setq custom-file "~/.config/emacs/.emacs.custom")
 (load-file custom-file)
@@ -439,6 +571,32 @@ v     ((todo "NEXT"
   :config
   (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")
   (setq vterm-max-scrollback 10000))
+
+(use-package anki-editor)
+
+(use-package ebdb
+  :ensure t
+  :defer t
+  :init
+  (setq ebdb-sources '("~/Nextcloud/emacs/edbd"))
+  (setq ebdb-complete-mail t
+        ebdb-complete-name t)
+  :config
+  (setq ebdb-default-window-size 0.3
+        ebdb-multiline t)
+  (setq ebdb-auto-save-p t)
+  (require 'edbd-vcard))
+
+(use-package company-ebdb
+  :ensure t
+  :after (ebdb company)
+  :config
+  (add-to-list 'company-backends 'company-ebdb))
+
+(use-package ivy-prescient
+  :after ivy
+  :config
+  (ivy-prescient-mode 1))
 
 (use-package eww
   :commands (eww eww-open-file)
@@ -581,3 +739,53 @@ v     ((todo "NEXT"
 (use-package pass
   :after password-store
   :commands (pass))
+
+(use-package mu4e
+  :ensure nil
+  :load-path "~/mu/mu4e/"
+  :config
+  (setq mail-user-agent 'mu4e)
+
+  (setq mu4e-mu-binary "~/mu/build/mu/mu")
+  (setq mu4e-change-filenames-when-moving t)
+
+  (setq mu4e-update-interval (* 3 60))     ;; Update every 3 minutes
+  (setq mu4e-get-mail-command "mbsync -a")
+  (setq mu4e-index-lazy-check t)
+  (setq mu4e-maildir "~/Mail")
+  
+  (setq mu4e-drafts-folder "/gmx/Drafts")
+  (setq mu4e-sent-folder "/gmx/Sent")
+  (setq mu4e-refile-folder "/gmx/Archiv")
+  (setq mu4e-trash-folder "/gmx/Trash")
+
+  (setq mu4e-maildir-shortcuts
+	'(("/gmx/INBOX"   . ?i)
+	  ("/gmx/Sent"    . ?s)
+	  ("/gmx/Trash"   . ?t)
+	  ("/gmx/Drafts"  . ?d)
+	  ("/gmx/Archive" . ?a)))
+
+  (setq mu4e-use-fancy-chars t)
+
+  :hook
+  ;; tweak the composer
+  ((mu4e-compose-mode . (lambda ()
+                          (set-fill-column 72)
+                          (flyspell-mode)))
+   ;; allow for inserting attachments with dired,
+   ;;   with `M-x gnus-dired-attach'
+   (dired-mode  . turn-on-gnus-dired-mode))
+
+  :bind ;; the Mu4e transient menu
+  (("C-c m" . mu4e)))
+
+
+
+;;  (require 'kg)
+
+;;  (setq kg-backend-url "http://localhost:3000")
+
+;;  (setq kg-auto-process nil)
+
+;;  (kg-initialize)

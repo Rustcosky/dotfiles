@@ -10,3 +10,5 @@
 !.emacs.d/config.org
 !.emacs.d/lisp/
 !.emacs.d/lisp/org-eww.el
+!.emacs.d/logos/
+!.emacs.d/logos/emax.png
