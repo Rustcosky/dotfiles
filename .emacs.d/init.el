@@ -66,7 +66,8 @@
 		term-mode-hook
 		shell-mode-hook
 		treemacs-mode-hook
-		eshell-mode-hook))
+		eshell-mode-hook
+		pdf-view-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
 (use-package command-log-mode)
@@ -226,8 +227,10 @@
 	  "~/Nextcloud/Documents/org-files/habits.org"))
   (require 'org-habit)
   (add-to-list 'org-modules 'org-habit)
-  (setq org-habit-graph-column 60))
-
+  (setq org-habit-graph-column 60)
+  :custom
+  (setq org-format-latex-options (plist-put org-format-latex-options :scale 1.3))
+  (setq org-preview-latex-default-process 'dvisvgm))
 ;; (use-package org-bullets
 ;;   :after org
 ;;   :hook (org-mode . org-bullets-mode))
@@ -477,6 +480,9 @@ v     ((todo "NEXT"
 
 (require 'org-eww)
 
+(use-package org-fragtog
+  :hook (org-mode-hook . org-fragtog-mode))
+
 (defun efs/lsp-mode-setup ()
   (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
   (lsp-headerline-breadcrumb-mode))
@@ -571,6 +577,18 @@ v     ((todo "NEXT"
   :config
   (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")
   (setq vterm-max-scrollback 10000))
+
+(use-package pdf-tools
+  :init
+  (pdf-tools-install)
+  :hook
+  (pdf-view-mode . pdf-view-roll-minor-mode))
+
+(use-package pdf-view-restore
+  :after pdf-tools
+  :config
+  (add-hook 'pdf-view-mode-hook 'pdf-view-restore-mode)
+  (setq pdf-view-restore-filename (concat user-emacs-directory ".pdf-view-restore")))
 
 (use-package anki-editor)
 
