@@ -493,10 +493,28 @@ v     ((todo "NEXT"
   :init
   (setq lsp-keymap-prefix "C-c l")
   :config
-  (lsp-enable-which-key-integration t))
+  (lsp-enable-which-key-integration t)
+  :custom
+  ;; what to use when checking on-save. "check" is default, I prefer clippy
+  (lsp-rust-analyzer-cargo-watch-command "clippy")
+  (lsp-eldoc-render-all t)
+  (lsp-idle-delay 0.6)
+  ;; enable / disable the hints as you prefer:
+  (lsp-inlay-hint-enable t)
+  ;; These are optional configurations. See https://emacs-lsp.github.io/lsp-mode/page/lsp-rust-analyzer/#lsp-rust-analyzer-display-chaining-hints for a full list
+  (lsp-rust-analyzer-display-lifetime-elision-hints-enable "skip_trivial")
+  (lsp-rust-analyzer-display-chaining-hints t)
+  (lsp-rust-analyzer-display-lifetime-elision-hints-use-parameter-names nil)
+  (lsp-rust-analyzer-display-closure-return-type-hints t)
+  (lsp-rust-analyzer-display-parameter-hints nil)
+  (lsp-rust-analyzer-display-reborrow-hints nil))
 
 (use-package lsp-ui
-  :hook (lsp-mode . lsp-ui-mode))
+  :hook (lsp-mode . lsp-ui-mode)
+  :custom
+  (lsp-ui-peek-always-show t)
+  (lsp-ui-sideline-show-hover t)
+  (lsp-ui-doc-enable nil))
 
 (use-package lsp-treemacs
   :after lsp)
@@ -551,10 +569,25 @@ v     ((todo "NEXT"
   :config
   (setq python-shell-interpreter "python3"))
 
-(use-package rust-mode
-  :hook (rust-mode . lsp-deferred)
-  :config
-  (setq rust-format-on-save t))
+(use-package rustic
+:ensure
+:bind (:map rustic-mode-map
+            ("M-j" . lsp-ui-imenu)
+            ("M-?" . lsp-find-references)
+            ("C-c C-c l" . flycheck-list-errors)
+            ("C-c C-c a" . lsp-execute-code-action)
+            ("C-c C-c r" . lsp-rename)
+            ("C-c C-c q" . lsp-workspace-restart)
+            ("C-c C-c Q" . lsp-workspace-shutdown)
+            ("C-c C-c s" . lsp-rust-analyzer-status))
+:config
+;; uncomment for less flashiness
+;; (setq lsp-eldoc-hook nil)
+;; (setq lsp-enable-symbol-highlighting nil)
+;; (setq lsp-signature-auto-activate nil)
+
+;; comment to disable rustfmt on save
+(setq rustic-format-on-save t))
 
 (use-package sh-script
   :hook (sh-mode . lsp-deferred))
