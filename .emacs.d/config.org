@@ -7,6 +7,11 @@ Currenty, this leads to just one long init.el containing the code blocks of this
 
 This is work in progress, a lot can be improved.
 
+Since the selection of Emacs packages is so enormous, there are some community-curated lists:
+
+- https://github.com/emacs-tw/awesome-emacs
+  
+
 * Path
 
 For convenience, we start by setting some file system path related variables. [[elisp:(describe-variable 'user-emacs-directory)][user-emacs-directory]] contains the path assigned to the local Emacs installation.
