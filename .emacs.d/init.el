@@ -266,20 +266,12 @@
 (use-package visual-fill-column
   :hook (org-mode . max/org-mode-visual-fill))
 
-(remove-hook 'completion-at-point-functions
-           #'ispell-completion-at-point)
-
 (use-package org-modern
   :hook (org-mode . org-modern-mode))
 
 (setq org-todo-keywords
     '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
       (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)" "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
-
-
-(require 'org-habit)
-  (add-to-list 'org-modules 'org-habit)
-  (setq org-habit-graph-column 60)
 
 ;; Save Org buffers after refiling!
 (advice-add 'org-refile :after 'org-save-all-org-buffers)
@@ -645,10 +637,6 @@ v     ((todo "NEXT"
   :config
   (add-to-list 'company-backends 'company-ebdb))
 
-(use-package ivy-prescient
-  :after ivy
-  :config
-  (ivy-prescient-mode 1))
 
 (use-package eww
   :commands (eww eww-open-file)

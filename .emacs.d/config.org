@@ -451,9 +451,6 @@ The infamous [[https://orgmode.org/][Org Mode]] is arguably the best way to orga
 
   (use-package visual-fill-column
     :hook (org-mode . max/org-mode-visual-fill))
-
-  (remove-hook 'completion-at-point-functions
-             #'ispell-completion-at-point)
 #+end_src
 
 *** Org Modern
@@ -469,11 +466,6 @@ The infamous [[https://orgmode.org/][Org Mode]] is arguably the best way to orga
   (setq org-todo-keywords
       '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
         (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)" "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
-
-
-  (require 'org-habit)
-    (add-to-list 'org-modules 'org-habit)
-    (setq org-habit-graph-column 60)
 
   ;; Save Org buffers after refiling!
   (advice-add 'org-refile :after 'org-save-all-org-buffers)
@@ -998,18 +990,6 @@ Company integration for EBDB.
     :config
     (add-to-list 'company-backends 'company-ebdb))
 #+end_src
-
-*** Ivy-Prescient
-
-Ivy integration for EBDB.
-
-#+begin_src emacs-lisp
-  (use-package ivy-prescient
-    :after ivy
-    :config
-    (ivy-prescient-mode 1))
-#+end_src
-
 
 ** EWW (Browser)
 
