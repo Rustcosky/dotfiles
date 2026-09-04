@@ -10,7 +10,13 @@ This is work in progress, a lot can be improved.
 Since the selection of Emacs packages is so enormous, there are some community-curated lists:
 
 - https://github.com/emacs-tw/awesome-emacs
-  
+
+Emacs 31 has introduces warnings for not setting explicit cookies for [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Lexical-Binding.html][lexical binding]] (deciding whether or not to use lexical binding or opt out and use dynamic binding). We explicitely opt in as is recommended. We also suppress the warning from external packages (since some have not been updated yet, leading to a warning on every startup).
+
+#+begin_src emacs-lisp
+  ;;; -*- lexical-binding: t; -*-
+  (add-to-list 'warning-suppress-types '(files missing-lexbind-cookie))
+#+end_src
 
 * Path
 

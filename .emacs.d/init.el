@@ -1,3 +1,6 @@
+;;; -*- lexical-binding: t; -*-
+(add-to-list 'warning-suppress-types '(files missing-lexbind-cookie))
+
 (defvar non-repo-lisp-packages-path (concat user-emacs-directory "lisp/"))
 
 (require 'package)
