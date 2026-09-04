@@ -387,6 +387,10 @@ On [[https://github.com/abo-abo/swiper#ivy][Ivy]]
 
 The infamous [[https://orgmode.org/][Org Mode]] is arguably the best way to organize absolutely anything!
 
+#+begin_src emacs-lisp
+  (setq org-use-speed-commands t)
+#+end_src
+
 ** Appearance
 
 #+begin_src emacs-lisp

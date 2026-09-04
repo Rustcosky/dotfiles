@@ -206,6 +206,8 @@
   ([remap describe-variable] . counsel-describe-variable)
   ([remap describe-key] . helpful-key))
 
+(setq org-use-speed-commands t)
+
 (defun max/org-remove-ispell-capf ()
 (setq-local completion-at-point-functions
             (remove #'ispell-completion-at-point
