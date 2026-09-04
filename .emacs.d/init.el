@@ -120,7 +120,7 @@
     :prefix "C-q")
 
   (max/leader-keys
-    "t" '(:ignore t :which-key "toggles")
+    "a" '(org-agenda :which-key "agenda")
     "c" '(org-capture :which-key "capture template")))
 
 (use-package hydra)
