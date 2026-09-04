@@ -602,7 +602,9 @@ v     ((todo "NEXT"
   :commands vterm
   :config
   (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")
-  (setq vterm-max-scrollback 10000))
+  (setq vterm-max-scrollback 20000)
+  (setq vterm-kill-buffer-on-exit t)  ;; auto-kill buffer when shell exits
+  :bind (("C-c t" . 'vterm-other-window)))
 
 (use-package pdf-tools
   :init
