@@ -93,7 +93,11 @@ This section contains everything regarding how Emacs looks.
 The following are essentially infamous default settings.
 
 #+begin_src emacs-lisp
-  (toggle-frame-fullscreen)
+  ;; Don't toggle fullscreen when running in terminal
+  (add-hook 'after-init-hook
+  	  (lambda ()
+  	    (when (display-graphic-p)
+  	      (toggle-frame-fullscreen))))
 
   (tool-bar-mode 0)
   (menu-bar-mode 0)

@@ -32,7 +32,11 @@
 
 (setq tab-bar-new-tab-choice "*dashboard*")
 
-(toggle-frame-fullscreen)
+;; Don't toggle fullscreen when running in terminal
+(add-hook 'after-init-hook
+	  (lambda ()
+	    (when (display-graphic-p)
+	      (toggle-frame-fullscreen))))
 
 (tool-bar-mode 0)
 (menu-bar-mode 0)
