@@ -996,6 +996,9 @@ Company integration for EBDB.
 Emacs has a build-in browser called [[https://www.gnu.org/software/emacs/manual/html_mono/eww.html][EWW]]. It is pretty convenient for some text-heavy pages like wikipedia. But since it can't execute JS, it's quite limited.
 
 #+begin_src emacs-lisp
+  (unless (file-directory-p "~/downloads")
+    (make-directory "~/downloads"))
+
   (use-package eww
     :commands (eww eww-open-file)
     :init

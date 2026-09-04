@@ -637,6 +637,8 @@ v     ((todo "NEXT"
   :config
   (add-to-list 'company-backends 'company-ebdb))
 
+(unless (file-directory-p "~/downloads")
+  (make-directory "~/downloads"))
 
 (use-package eww
   :commands (eww eww-open-file)
