@@ -587,7 +587,9 @@ v     ((todo "NEXT"
 
 ;; Use a custom file so that emacs doesn't write in init.el
 (setq custom-file "~/.config/emacs/.emacs.custom")
-(load-file custom-file)
+
+(when (file-exists-p custom-file)
+  (load-file custom-file))
 
 (setq org-refile-targets
     '(("archive.org" :maxlevel . 1)

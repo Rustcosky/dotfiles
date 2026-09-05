@@ -894,7 +894,9 @@ I don't really use the interfaces that causes Emacs to persist configurations in
 #+begin_src emacs-lisp
   ;; Use a custom file so that emacs doesn't write in init.el
   (setq custom-file "~/.config/emacs/.emacs.custom")
-  (load-file custom-file)
+  
+  (when (file-exists-p custom-file)
+    (load-file custom-file))
 #+end_src
 
 ** Refile Targets
