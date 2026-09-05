@@ -345,27 +345,27 @@ v     ((todo "NEXT"
 
 (defun my-org-language-files ()
   (mapcar
-    (lambda (file)
-    (file-name-base file))
-  (directory-files
+   (lambda (file)
+     (file-name-base file))
+   (directory-files
     (expand-file-name my-org-language-directory)
     t
     "\\.org\\'")))
 
 (defun my-org-select-language ()
   (let* ((langs (my-org-language-files))
-       (default (or my-org-last-language
-                    (car langs)))
-       (choice
-        (completing-read
-         "Language: "
-         langs
-         nil
-         t
-         nil
-         nil
-         default)))
-  (setq my-org-last-language choice)
+	 (default (or my-org-last-language
+		      (car langs)))
+	 (choice
+	  (completing-read
+	   "Language: "
+           langs
+           nil
+           t
+           nil
+           nil
+           default)))
+    (setq my-org-last-language choice)
     choice))
 
 (defun my-org-capture-anki-basic ()
