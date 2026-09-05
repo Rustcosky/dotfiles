@@ -208,6 +208,10 @@
 
 (setq org-use-speed-commands t)
 
+(setq org-priority-highest ?A
+      org-priority-lowest ?C
+      org-priority-default ?B)
+
 (defun max/org-remove-ispell-capf ()
 (setq-local completion-at-point-functions
             (remove #'ispell-completion-at-point

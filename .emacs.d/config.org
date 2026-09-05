@@ -389,6 +389,10 @@ The infamous [[https://orgmode.org/][Org Mode]] is arguably the best way to orga
 
 #+begin_src emacs-lisp
   (setq org-use-speed-commands t)
+
+  (setq org-priority-highest ?A
+        org-priority-lowest ?C
+        org-priority-default ?B)
 #+end_src
 
 ** Appearance
