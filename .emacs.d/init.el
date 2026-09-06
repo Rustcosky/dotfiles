@@ -20,7 +20,7 @@
 			 ("melpa" . "https://melpa.org/packages/")))
 
 (package-initialize)
-(unless package-archive-contents
+(unless (or package-archive-contents (file-exists-p package-user-dir))
   (package-refresh-contents))
 
 ;; Initialize use-package on non-Linux platforms
