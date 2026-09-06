@@ -60,13 +60,6 @@
 (setq inhibit-startup-message t)
 (setq visible-bell t)
 
-;;(use-package doom-themes
-;;:init (load-theme 'doom-outrun-electric t))
-
-;;(use-package zenburn-theme
-;;  :config
-;;  (load-theme 'zenburn t))
-
 (use-package gruvbox-theme
   :config
   (load-theme 'gruvbox-dark-hard t))

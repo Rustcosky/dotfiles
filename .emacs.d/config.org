@@ -127,13 +127,6 @@ The following are essentially infamous default settings.
 Configurations for themes go here. I've tried themes from the [[https://github.com/doomemacs/themes][doom-themes]] and [[https://github.com/bbatsov/zenburn-emacs][zenburn]] packages. But for my current display (which doesn't have the greatest contrast, rendering a lot of "easy on the eyes"-themes a little hard to read), I found the hard [[https://github.com/greduan/emacs-theme-gruvbox][gruvbox]] fitting.
 
 #+begin_src emacs-lisp
-  ;;(use-package doom-themes
-  ;;:init (load-theme 'doom-outrun-electric t))
-
-  ;;(use-package zenburn-theme
-  ;;  :config
-  ;;  (load-theme 'zenburn t))
-  
   (use-package gruvbox-theme
     :config
     (load-theme 'gruvbox-dark-hard t))
