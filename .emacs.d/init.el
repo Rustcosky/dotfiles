@@ -1,7 +1,18 @@
 ;;; -*- lexical-binding: t; -*-
 (add-to-list 'warning-suppress-types '(files missing-lexbind-cookie))
 
-(defvar non-repo-lisp-packages-path (concat user-emacs-directory "lisp/"))
+(defvar my-config-file "~/Documents/Projects/dotfiles/.emacs.d/config.org")
+(defvar my-config-directory "~/.config/")
+(defvar my-emacs-logo-directory (concat user-emacs-directory "logos/"))
+(defvar my-local-packages-directory (concat user-emacs-directory "lisp/"))
+(defvar my-org-directory "~/Nextcloud/Documents/org-files/")
+(defvar my-org-language-directory "~/Nextcloud/Documents/org-files/languages/")
+(defvar my-projects-directory "~/Documents/Projects/")
+(defvar my-downloads-directory "~/Downloads/")
+(defvar my-mail-directory "~/Mail")
+(defvar my-mu4e-load-directory "~/mu/mu4e/")
+(defvar my-mu-binary "~/mu/build/mu/mu")
+(defvar my-edbd-directory "~/Nextcloud/emacs/edbd")
 
 (require 'package)
 
@@ -20,8 +31,8 @@
 (setq use-package-always-ensure t)
 
 ;; Add local path to Emacs packages not managed by one of the repos above
-(add-to-list 'load-path non-repo-lisp-packages-path)
-(add-to-list 'load-path (concat non-repo-lisp-packages-path "assist_emacs")) ;; my own package
+(add-to-list 'load-path my-local-packages-directory)
+(add-to-list 'load-path (concat my-local-packages-directory "assist_emacs")) ;; my own package
 
 (use-package no-littering)
 
@@ -87,7 +98,7 @@
 (use-package dashboard
   :config
   (setq dashboard-banner-logo-title "Welcome")
-  (setq dashboard-startup-banner "~/.emacs.d/logos/emax.png")
+  (setq dashboard-startup-banner (concat my-emacs-logo-directory "emax.png"))
   (setq dashboard-center-content t)
   (setq dashboard-vertical-center-content t)
   (setq dashboard-items '((recents . 5)
@@ -206,6 +217,12 @@
   ([remap describe-variable] . counsel-describe-variable)
   ([remap describe-key] . helpful-key))
 
+(defvar my-org-task-file (concat my-org-directory "tasks.org"))
+(defvar my-org-journal-file (concat my-org-directory "journal.org"))
+(defvar my-org-habits-file (concat my-org-directory "habits.org"))
+(defvar my-org-web-file (concat my-org-directory "web.org"))
+(defvar my-org-roam-directory (concat my-org-directory "roam"))
+
 (setq org-use-speed-commands t)
 
 (setq org-priority-highest ?A
@@ -234,9 +251,7 @@
 	org-hide-emphasis-markers t
 	org-startup-folded t
 	org-hide-drawer-startup t
-	org-agenda-files
-	'("~/Nextcloud/Documents/org-files/tasks.org"
-	  "~/Nextcloud/Documents/org-files/habits.org"))
+	org-agenda-files (list my-org-task-file my-org-habits-file))
   (require 'org-habit)
   (add-to-list 'org-modules 'org-habit)
   (setq org-habit-graph-column 60)
@@ -273,9 +288,18 @@
 (use-package org-modern
   :hook (org-mode . org-modern-mode))
 
+;; Save Org buffers after refiling!
+(advice-add 'org-refile :after 'org-save-all-org-buffers)
+
 (setq org-todo-keywords
-    '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
-      (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)" "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
+    '((sequence
+       "IDEA(i)"
+       "TODO(t)"
+       "NEXT(n)"
+       "WAIT(w@/!)"
+       "|"
+       "DONE(d!)"
+       "CANCELLED(c@)")))
 
 ;; Save Org buffers after refiling!
 (advice-add 'org-refile :after 'org-save-all-org-buffers)
@@ -294,133 +318,258 @@
        ("note" . ?n)
        ("idea" . ?i)))
 
+(defun max/org-agenda-skip-done-cancelled ()
+  "Skip entries that are DONE or CANCELLED."
+  (when (org-agenda-skip-entry-if 'todo '("DONE" "CANCELLED"))
+    (save-excursion (org-end-of-subtree t))))
+
+(defun max/org-agenda-skip-unless-project ()
+  "Skip headings unless they are level-2 children of the Projects heading."
+  (unless (and (= (org-outline-level) 2)
+        (save-excursion
+    (org-up-heading-safe)
+    (string= (org-get-heading t t t t) "Projects")))
+    (org-end-of-subtree t)))
+
 ;; Configure custom agenda views
-(setq org-agenda-custom-commands
-   '(("d" "Dashboard"
-     ((agenda "" ((org-deadline-warning-days 7)))
+  (setq org-agenda-custom-commands
+      '(("i" "Ideas"
+          (todo "IDEA"
+          ((org-agenda-overriding-header "Ideas")
+          (org-agenda-max-todos 30))))
+    
+  ("d" "Dashboard"
+        (agenda ""
+        ((org-agenda-span 'day)
+        (org-deadline-warning-days 7)
+        (org-agenda-overriding-header "Today")
+    (org-agenda-skip-function
+      #'max/org-agenda-skip-done-cancelled)))
+
       (todo "NEXT"
-        ((org-agenda-overriding-header "Next Tasks")))
-      (tags-todo "agenda/ACTIVE" ((org-agenda-overriding-header "Active Projects")))))
-
-    ("n" "Next Tasks"
-v     ((todo "NEXT"
-        ((org-agenda-overriding-header "Next Tasks")))))
-
-    ("W" "Work Tasks" tags-todo "+work-email")
-
-    ;; Low-effort next actions
-    ("e" tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"
-     ((org-agenda-overriding-header "Low Effort Tasks")
+      ((org-agenda-overriding-header "Next Actions")
       (org-agenda-max-todos 20)
-      (org-agenda-files org-agenda-files)))
+      (org-agenda-sorting-strategy
+        '(priority-down effort-up))))
+        
+      (todo "WAIT"
+      ((org-agenda-overriding-header "Waiting For")
+      (org-agenda-max-todos 20)))
 
-    ("w" "Workflow Status"
-     ((todo "WAIT"
-            ((org-agenda-overriding-header "Waiting on External")
-             (org-agenda-files org-agenda-files)))
-      (todo "REVIEW"
-            ((org-agenda-overriding-header "In Review")
-             (org-agenda-files org-agenda-files)))
-      (todo "PLAN"
-            ((org-agenda-overriding-header "In Planning")
-             (org-agenda-todo-list-sublevels nil)
-             (org-agenda-files org-agenda-files)))
-      (todo "BACKLOG"
-            ((org-agenda-overriding-header "Project Backlog")
-             (org-agenda-todo-list-sublevels nil)
-             (org-agenda-files org-agenda-files)))
-      (todo "READY"
-            ((org-agenda-overriding-header "Ready for Work")
-             (org-agenda-files org-agenda-files)))
-      (todo "ACTIVE"
-            ((org-agenda-overriding-header "Active Projects")
-             (org-agenda-files org-agenda-files)))
-      (todo "COMPLETED"
-            ((org-agenda-overriding-header "Completed Projects")
-             (org-agenda-files org-agenda-files)))
-      (todo "CANC"
-            ((org-agenda-overriding-header "Cancelled Projects")
-             (org-agenda-files org-agenda-files)))))))
+      (todo "IDEA"
+      ((org-agenda-overriding-header "Ideas")
+      (org-agenda-max-todos 10)))
+          
+        (tags "LEVEL=2"
+        ((org-agenda-overriding-header "Projects")
+        (org-agenda-files (list my-org-task-file))
+        (org-agenda-skip-function #'max/org-agenda-skip-unless-project)))
+
+      (todo "TODO"
+      ((org-agenda-overriding-header "Inbox")
+      (org-agenda-files (list my-org-task-file)))))
+
+  ("n" "Next Actions"
+  (todo "NEXT"
+      ((org-agenda-overriding-header "Next Actions")
+      (org-agenda-max-todos 30)
+      (org-agenda-sorting-strategy
+        '(priority-down effort-up)))))
+
+  ("w" "Waiting For"
+  (todo "WAIT"
+      ((org-agenda-overriding-header "Waiting For")
+      (org-agenda-max-todos 30)
+      (org-agenda-sorting-strategy
+        '(deadline-up priority-down)))))
+  
+  ("p" "Projects"
+  (tags "LEVEL=2"
+      ((org-agenda-overriding-header "Projects")
+      (org-agenda-files (list my-org-task-file)))))
+  
+  ("e" "Quick Wins"
+  (tags-todo "+TODO=\"NEXT\"+EFFORT<15+EFFORT>0"
+          ((org-agenda-overriding-header "Under 15 Minutes")
+            (org-agenda-max-todos 20)
+            (org-agenda-files (list my-org-task-file)))))))
 
 (defvar my-org-language-directory
-  "~/Nextcloud/Documents/org-files/languages/")
+    "~/Nextcloud/Documents/org-files/languages/")
 
-(defvar my-org-last-language nil)
+  (defvar my-org-last-language nil)
 
-(defun my-org-language-files ()
-  (mapcar
-   (lambda (file)
-     (file-name-base file))
-   (directory-files
-    (expand-file-name my-org-language-directory)
-    t
-    "\\.org\\'")))
+  (defun max/org-projects ()
+    "Return level-2 project headings from `my-org-task-file`."
+    (with-current-buffer (find-file-noselect my-org-task-file)
+      (save-excursion
+        (goto-char (point-min))
+        (when (re-search-forward "^\\* Projects[ \t]*$" nil t)
+    (let (projects)
+      (org-map-entries (lambda ()
+            (when (= (org-outline-level) 2)
+              (push (org-get-heading t t t t) projects))
+            "LEVEL=2"
+            'tree)
+          (nreverse projects)))))))
 
-(defun my-org-select-language ()
-  (let* ((langs (my-org-language-files))
-	 (default (or my-org-last-language
-		      (car langs)))
-	 (choice
-	  (completing-read
-	   "Language: "
-           langs
-           nil
-           t
-           nil
-           nil
-           default)))
-    (setq my-org-last-language choice)
-    choice))
+  (defun max/org-capture-todo-target ()
+    "Choose a project for a TODO/IDEA/WAIT capture.
+  An empty project selection sends the capture to Inbox."
+    (let ((project
+    (ivy-read
+      "Project (empty = Inbox): "
+      (cons "" (max/org-projects))
+      :require-match nil
+      :initial-input ""
+      :preselect "")))
+      (org-capture-set-target-location
+      (if (string-empty-p project)
+    '(file+headline ,my-org-task-file "Inbox")
+        '(file+headline ,my-org-task-file ,project)))))
 
-(defun my-org-capture-anki-basic ()
-  (let* ((lang (my-org-select-language))
-         (file (expand-file-name
-                (concat lang ".org")
-                my-org-language-directory)))
-    (org-capture-set-target-location
-     `(file+headline ,file "Basics"))))
+  (defun my-org-language-files ()
+    (mapcar
+     (lambda (file)
+       (file-name-base file))
+     (directory-files
+      (expand-file-name my-org-language-directory)
+      t
+      "\\.org\\'")))
 
-(setq org-capture-templates
-    `(("t" "Tasks / Projects")
-      ("tt" "Task" entry (file+olp "~/Nextcloud/Documents/org-files/tasks.org" "Inbox")
-           "* TODO %?\n  %U\n  %a\n  %i" :empty-lines 1)
+  (defun my-org-select-language ()
+    (let* ((langs (my-org-language-files))
+  	 (default (or my-org-last-language
+  		      (car langs)))
+  	 (choice
+  	  (completing-read
+  	   "Language: "
+             langs
+             nil
+             t
+             nil
+             nil
+             default)))
+      (setq my-org-last-language choice)
+      choice))
 
-      ("j" "Journal Entries")
-      ("jj" "Journal" entry
-           (file+olp+datetree "~/Nextcloud/Documents/org-files/journal.org")
-           "\n* %<%I:%M %p> - Journal :journal:\n\n%?\n\n"
-           ;; ,(dw/read-file-as-string "~/Notes/Templates/Daily.org")
-           :clock-in :clock-resume
-           :empty-lines 1)
-      ("jm" "Meeting" entry
-           (file+olp+datetree "~/Nextcloud/Documents/org-files/journal.org")
-           "* %<%I:%M %p> - %a :meetings:\n\n%?\n\n"
-           :clock-in :clock-resume
-           :empty-lines 1)
+  (defun my-org-capture-anki-basic ()
+    (let* ((lang (my-org-select-language))
+           (file (expand-file-name
+                  (concat lang ".org")
+                  my-org-language-directory)))
+      (org-capture-set-target-location
+       `(file+headline ,file "Basics"))))
+  
+  (setq org-capture-templates
+      `(("t" "Task" entry
+	 (function max/org-capture-todo-target)
+	 "* TODO %^{Task}
+:PROPERTIES:
+:CREATED: %U
+:EFFORT: %^{Effort}
+:END:
+%?"
+	 :empty-lines 1)
 
-      ("v" "Vocabulary")
-      ("vb" "Basic" entry (function my-org-capture-anki-basic)
+	("i" "Idea" entry
+	 (file+headline my-org-task-file "Inbox")
+	 "* IDEA %^{Idea}
+:PROPERTIES:
+:CREATED: %U
+:EFFORT: %^{Effort}
+:END:
+%?"
+	 :empty-lines 1)
+	
+	("w" "Waiting For" entry
+	 (file+headline my-org-task-file "Inbox")
+	 "* WAIT %^{What are you waiting for?}
+:PROPERTIES:
+:CREATED: %U
+:WAITING_FOR: %^{Waiting for}
+:WAITING_SINCE: %U
+:END:
+%?"
+	 :empty-lines 1)
+	
+	("p" "Project" entry
+	 (file+headline my-org-task-file "Projects")
+	 "** %^{Project name}
+:PROPERTIES:
+:CREATED: %U
+:END:
+
+%?"
+	 :empty-lines 1)
+
+	("m" "Meeting" entry
+	 (file+olp+datetree my-org-journal-file)
+	 "* %<%H:%M> %^{Meeting title} :meeting:
+:PROPERTIES:
+:CREATED: %U
+:END:
+
+*Attendees*
+%^{Attendees}
+
+*Agenda*
+%^{Agenda}
+
+*Notes*
+%?
+
+*Decisions*
+
+*Actions*
+- TODO "
+	 :empty-lines 1)
+
+	("n" "Note" entry
+	 (file+headline my-org-task-file "Inbox")
+	 "* %^{Note title}
+:PROPERTIES:
+:CREATED: %U
+:END:
+
+%?"
+	 :empty-lines 1)
+        
+	("j" "Journal" entry
+	 (file+olp+datetree my-org-journal-file)
+	 "\n* %<%I:%M %p> - Journal :journal:\n\n%?\n\n"
+	 :clock-in :clock-resume
+	 :empty-lines 1)
+	
+	("v" "Vocabulary")
+	("vb" "Basic" entry (function my-org-capture-anki-basic)
 	 "* %^{Front}\n:PROPERTIES:\n:ANKI_NOTE_TYPE: Basic\n:END:\n\n%^{Back}\n\n")
-      
-      ("w" "Workflows")
-      ("we" "Checking Email" entry (file+olp+datetree "~/Nextcloud/Documents/org-files/journal.org")
-           "* Checking Email :email:\n\n%?" :clock-in :clock-resume :empty-lines 1)
+	
+	("e" "EWW article"
+	 entry
+	 (file my-org-web-file)
+	 "* %a\n:PROPERTIES:\n:URL: %u\n:END:\n\n%?"
+	 :empty-lines 1)))
 
-      ("m" "Metrics Capture")
-      ("mw" "Weight" table-line (file+headline "~/Nextcloud/Documents/org-files/metrics.org" "Weight")
-       "| %U | %^{Weight} | %^{Notes} |" :kill-buffer t)
-      ("e" "EWW article"
-           entry
-           (file "~/Nextcloud/Documents/org-files/web.org")
-           "* %a\n:PROPERTIES:\n:URL: %u\n:END:\n\n%?"
-           :empty-lines 1)))
+  (defun max/org-set-waiting-for ()
+    "Prompt for who/what a task is waiting for and record it."
+  (when (and (string= org-state "WAIT")
+      (not (string= org-last-state "WAIT")))
+    (org-set-property
+    "WAITING_FOR"
+    (read-string "Waiting for: "))
+    (org-set-property
+    "WAITING_SINCE"
+    (format-time-string "[%Y-%m-%d %a %H:%M]"))))
 
-(require 'org-tempo)
+  (add-hook 'org-after-todo-state-change-hook #'max/org-set-waiting-for)
 
-(add-to-list 'org-structure-template-alist '("sh" . "src shell"))
-(add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
-(add-to-list 'org-structure-template-alist '("py" . "src python"))
-(add-to-list 'org-structure-template-alist '("rs" . "src rust"))
+  (require 'org-tempo)
+
+  (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
+  (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
+  (add-to-list 'org-structure-template-alist '("py" . "src python"))
+  (add-to-list 'org-structure-template-alist '("rs" . "src rust"))
 
 (org-babel-do-load-languages
  'org-babel-load-languages
@@ -430,7 +579,7 @@ v     ((todo "NEXT"
 
 (defun max/org-babel-tangle-config ()
   (when (string-equal (buffer-file-name)
-		      (expand-file-name "~/Documents/Projects/dotfiles/.emacs.d/config.org"))
+          (expand-file-name my-config-file))
     (let ((org-confirm-babel-evaluate nil))
       (org-babel-tangle))))
 
@@ -438,7 +587,7 @@ v     ((todo "NEXT"
 
 (use-package ob-mermaid
   :config
-  (setq ob-mermaid-default-config-file "~/.config/mermaid/mermaid-config.js"))
+  (setq ob-mermaid-default-config-file (concat my-config-directory "mermaid/mermaid-config.js")))
 
 (use-package org-tree-slide
   :custom
@@ -449,7 +598,7 @@ v     ((todo "NEXT"
 
 (use-package org-roam
   :custom
-  (org-roam-directory "~/Nextcloud/Documents/org-files/roam")
+  (org-roam-directory my-org-roam-directory)
   :bind (("C-c n l" . org-roam-buffer-toggle)
          ("C-c n f" . org-roam-node-find)
          ("C-c n g" . org-roam-graph)
@@ -542,8 +691,8 @@ v     ((todo "NEXT"
   :bind-keymap
   ("C-c p" . projectile-command-map)
   :init
-  (when (file-directory-p "~/Documents/Projects")
-    (setq projectile-project-search-path '("~/Documents/Projects")))
+  (when (file-directory-p my-projects-directory)
+    (setq projectile-project-search-path '(my-projects-directory)))
   (setq projectile-switch-project-action #'projectile-dired))
 
 (use-package counsel-projectile
@@ -596,8 +745,21 @@ v     ((todo "NEXT"
   (load-file custom-file))
 
 (setq org-refile-targets
-    '(("archive.org" :maxlevel . 1)
-      ("tasks.org" :maxlevel . 1)))
+      '((nil :maxlevel . 3)
+        ("archive.org" :maxlevel . 2)))
+
+(setq org-refile-use-outline-path 'file)
+(setq org-outline-path-complete-in-steps nil)
+(setq org-refile-allow-creating-parent-nodes nil)
+
+;; Keep the target list focused on the current task system.
+(setq org-refile-target-verify-function
+      (lambda ()
+        (not (member (org-get-heading t t t t)
+                    '("Inbox")))))
+
+;; Save Org files after refiling.
+(advice-add 'org-refile :after #'org-save-all-org-buffers)
 
 (use-package term
   :config
@@ -630,7 +792,7 @@ v     ((todo "NEXT"
   :ensure t
   :defer t
   :init
-  (setq ebdb-sources '("~/Nextcloud/emacs/edbd"))
+  (setq ebdb-sources '(my-edbd-directory))
   (setq ebdb-complete-mail t
         ebdb-complete-name t)
   :config
@@ -645,14 +807,14 @@ v     ((todo "NEXT"
   :config
   (add-to-list 'company-backends 'company-ebdb))
 
-(unless (file-directory-p "~/downloads")
-  (make-directory "~/downloads"))
+(unless (file-directory-p my-downloads-directory)
+  (make-directory my-downloads-directory))
 
 (use-package eww
   :commands (eww eww-open-file)
   :init
   (setq eww-search-prefix "https://www.duckduckgo.com/search?q="
-        eww-download-directory "~/downloads"
+        eww-download-directory my-downloads-directory
         shr-color-visible-luminance-min 80)
 
   :config
@@ -792,17 +954,17 @@ v     ((todo "NEXT"
 
 (use-package mu4e
   :ensure nil
-  :load-path "~/mu/mu4e/"
+  :load-path my-mu4e-load-directory
   :config
   (setq mail-user-agent 'mu4e)
 
-  (setq mu4e-mu-binary "~/mu/build/mu/mu")
+  (setq mu4e-mu-binary my-mu-binary)
   (setq mu4e-change-filenames-when-moving t)
 
   (setq mu4e-update-interval (* 3 60))     ;; Update every 3 minutes
   (setq mu4e-get-mail-command "mbsync -a")
   (setq mu4e-index-lazy-check t)
-  (setq mu4e-maildir "~/Mail")
+  (setq mu4e-maildir my-mail-directory)
   
   (setq mu4e-drafts-folder "/gmx/Drafts")
   (setq mu4e-sent-folder "/gmx/Sent")
