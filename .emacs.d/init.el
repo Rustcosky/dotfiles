@@ -148,7 +148,13 @@
 
 (use-package doom-modeline
   :init (doom-modeline-mode 1)
-  :custom ((doom-modeline-height 7)))
+  :custom
+  (doom-modeline-height 8)
+  (doom-modeline-buffer-file-name-style 'truncated)
+  (doom-modeline-major-mode-color nil)  ;; use default colors
+  (doom-modeline-minor-modes nil)       ;; hide minor modes to save space
+  :config
+  (setq doom-modeline-bar-width 1))
 
 (use-package which-key
   :init (which-key-mode)
