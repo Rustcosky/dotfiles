@@ -117,6 +117,11 @@
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 (global-set-key (kbd "M-o") 'other-window)
 
+(when (eq system-type 'darwin)
+  (setq mac-command-modifier 'meta)
+  (setq mac-option-modifier 'none)
+  (setq mac-right-command-modifier 'super))
+
 (use-package general
   :config
   (general-create-definer max/leader-keys

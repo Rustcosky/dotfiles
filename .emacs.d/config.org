@@ -241,7 +241,12 @@ Emacs is all about keybindings. So this is an important sections!
 
 #+begin_src emacs-lisp
   (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
-  (global-set-key (kbd "M-o") 'other-window)  
+  (global-set-key (kbd "M-o") 'other-window)
+
+  (when (eq system-type 'darwin)
+    (setq mac-command-modifier 'meta)
+    (setq mac-option-modifier 'none)
+    (setq mac-right-command-modifier 'super))
 #+end_src
 
 ** General
