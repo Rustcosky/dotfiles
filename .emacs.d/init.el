@@ -657,7 +657,8 @@
 (use-package lsp-ui
   :hook (lsp-mode . lsp-ui-mode)
   :custom
-  (lsp-ui-peek-always-show t)
+  (lsp-ui-doc-position 'right-fringe)   ;; show doc at point without overlapping
+  (lsp-ui-peek-always-show nil)         ;; only show peek on demand
   (lsp-ui-sideline-show-hover t)
   (lsp-ui-doc-enable nil))
 
