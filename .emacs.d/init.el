@@ -331,67 +331,67 @@
     (org-end-of-subtree t)))
 
 ;; Configure custom agenda views
-  (setq org-agenda-custom-commands
+(setq org-agenda-custom-commands
       '(("i" "Ideas"
-          (todo "IDEA"
-          ((org-agenda-overriding-header "Ideas")
-          (org-agenda-max-todos 30))))
-    
-  ("d" "Dashboard"
-        (agenda ""
-        ((org-agenda-span 'day)
-        (org-deadline-warning-days 7)
-        (org-agenda-overriding-header "Today")
-    (org-agenda-skip-function
-      #'max/org-agenda-skip-done-cancelled)))
+	 todo "IDEA"
+	       ((org-agenda-overriding-header "Ideas")
+		(org-agenda-max-todos 30)))
+	
+	("d" "Dashboard"
+	 agenda ""
+		 ((org-agenda-span 'day)
+		  (org-deadline-warning-days 7)
+		  (org-agenda-overriding-header "Today")
+		  (org-agenda-skip-function
+		   #'max/org-agenda-skip-done-cancelled))
 
-      (todo "NEXT"
-      ((org-agenda-overriding-header "Next Actions")
-      (org-agenda-max-todos 20)
-      (org-agenda-sorting-strategy
-        '(priority-down effort-up))))
-        
-      (todo "WAIT"
-      ((org-agenda-overriding-header "Waiting For")
-      (org-agenda-max-todos 20)))
-
-      (todo "IDEA"
-      ((org-agenda-overriding-header "Ideas")
-      (org-agenda-max-todos 10)))
-          
-        (tags "LEVEL=2"
-        ((org-agenda-overriding-header "Projects")
-        (org-agenda-files (list my-org-task-file))
-        (org-agenda-skip-function #'max/org-agenda-skip-unless-project)))
-
-      (todo "TODO"
-      ((org-agenda-overriding-header "Inbox")
-      (org-agenda-files (list my-org-task-file)))))
-
-  ("n" "Next Actions"
-  (todo "NEXT"
-      ((org-agenda-overriding-header "Next Actions")
-      (org-agenda-max-todos 30)
-      (org-agenda-sorting-strategy
-        '(priority-down effort-up)))))
-
-  ("w" "Waiting For"
-  (todo "WAIT"
-      ((org-agenda-overriding-header "Waiting For")
-      (org-agenda-max-todos 30)
-      (org-agenda-sorting-strategy
-        '(deadline-up priority-down)))))
-  
-  ("p" "Projects"
-  (tags "LEVEL=2"
-      ((org-agenda-overriding-header "Projects")
-      (org-agenda-files (list my-org-task-file)))))
-  
-  ("e" "Quick Wins"
-  (tags-todo "+TODO=\"NEXT\"+EFFORT<15+EFFORT>0"
-          ((org-agenda-overriding-header "Under 15 Minutes")
-            (org-agenda-max-todos 20)
-            (org-agenda-files (list my-org-task-file)))))))
+	 todo "NEXT"
+	       ((org-agenda-overriding-header "Next Actions")
+		(org-agenda-max-todos 20)
+		(org-agenda-sorting-strategy
+		 '(priority-down effort-up)))
+	 
+	 todo "WAIT"
+	       ((org-agenda-overriding-header "Waiting For")
+		(org-agenda-max-todos 20))
+	 
+	 todo "IDEA"
+	       ((org-agenda-overriding-header "Ideas")
+		(org-agenda-max-todos 10))
+	 
+	 tags "LEVEL=2"
+	       ((org-agenda-overriding-header "Projects")
+		(org-agenda-files (list my-org-task-file))
+		(org-agenda-skip-function #'max/org-agenda-skip-unless-project))
+	 
+	 todo "TODO"
+	       ((org-agenda-overriding-header "Inbox")
+		(org-agenda-files (list my-org-task-file))))
+	
+	("n" "Next Actions"
+	 todo "NEXT"
+	       ((org-agenda-overriding-header "Next Actions")
+		(org-agenda-max-todos 30)
+		(org-agenda-sorting-strategy
+		 '(priority-down effort-up))))
+	
+	("w" "Waiting For"
+	 todo "WAIT"
+	       ((org-agenda-overriding-header "Waiting For")
+		(org-agenda-max-todos 30)
+		(org-agenda-sorting-strategy
+		 '(deadline-up priority-down))))
+	
+	("p" "Projects"
+	 tags "LEVEL=2"
+	       ((org-agenda-overriding-header "Projects")
+		(org-agenda-files (list my-org-task-file))))
+	
+	("e" "Quick Wins"
+	 tags-todo "+TODO=\"NEXT\"+EFFORT<15+EFFORT>0"
+		    ((org-agenda-overriding-header "Under 15 Minutes")
+		     (org-agenda-max-todos 20)
+		     (org-agenda-files (list my-org-task-file))))))
 
 (defvar my-org-language-directory
     "~/Nextcloud/Documents/org-files/languages/")
