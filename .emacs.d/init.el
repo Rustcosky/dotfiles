@@ -404,28 +404,45 @@
       (save-excursion
         (goto-char (point-min))
         (when (re-search-forward "^\\* Projects[ \t]*$" nil t)
-    (let (projects)
-      (org-map-entries (lambda ()
-            (when (= (org-outline-level) 2)
-              (push (org-get-heading t t t t) projects))
+	  (let (projects)
+	    (org-map-entries
+	     (lambda ()
+	       (push (org-get-heading t t t t) projects))
             "LEVEL=2"
             'tree)
-          (nreverse projects)))))))
+          (nreverse projects))))))
 
   (defun max/org-capture-todo-target ()
-    "Choose a project for a TODO/IDEA/WAIT capture.
-  An empty project selection sends the capture to Inbox."
+    "Choose a project for a TODO capture, or Inbox if none is selected."
     (let ((project
-    (ivy-read
-      "Project (empty = Inbox): "
-      (cons "" (max/org-projects))
-      :require-match nil
-      :initial-input ""
-      :preselect "")))
-      (org-capture-set-target-location
+	   (ivy-read
+	    "Project (empty = Inbox): "
+	    (cons "" (max/org-projects))
+	    :require-match nil
+	    :initial-input ""
+	    :preselect "")))
+
+      ;; Visit the actual capture file.
+      (set-buffer (find-file-noselect my-org-task-file))
+      (org-mode)
+      ;; Find the desired parent headline.
+      (goto-char (point-min))
+      
       (if (string-empty-p project)
-    '(file+headline ,my-org-task-file "Inbox")
-        '(file+headline ,my-org-task-file ,project)))))
+	  (re-search-forward "^\\* Inbox[ \t]*$" nil t)
+	(progn
+	  (re-search-forward "^\\* Projects[ \t]*$" nil t)
+	  (let ((found nil))
+	    (org-map-entries
+	     (lambda ()
+	       (when (string= (org-get-heading t t t t) project)
+		 (setq found (point))))
+	     "LEVEL=2"
+	     'tree)
+	    (if found
+		(goto-char found)
+	      (user-error "Project not found: %s" project)))))
+      (beginning-of-line)))
 
   (defun my-org-language-files ()
     (mapcar
@@ -459,11 +476,15 @@
                   my-org-language-directory)))
       (org-capture-set-target-location
        `(file+headline ,file "Basics"))))
-  
+
+  (defun max/org-capture-todo-stars ()
+    "Return the appropriate number of stars for a captured task."
+    (make-string max/org-capture-todo-level ?*))
+
   (setq org-capture-templates
       `(("t" "Task" entry
-	 (function max/org-capture-todo-target)
-	 "* TODO %^{Task}
+	(file+function my-org-task-file max/org-capture-todo-target)
+	 "%(max/org-capture-todo-stars)* TODO %^{Task}
 :PROPERTIES:
 :CREATED: %U
 :EFFORT: %^{Effort}

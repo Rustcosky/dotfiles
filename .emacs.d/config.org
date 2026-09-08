@@ -591,182 +591,204 @@ The infamous [[https://orgmode.org/][Org Mode]] is arguably the best way to orga
 ** Templates
 
 #+begin_src emacs-lisp
-  (defvar my-org-language-directory
-    "~/Nextcloud/Documents/org-files/languages/")
+    (defvar my-org-language-directory
+      "~/Nextcloud/Documents/org-files/languages/")
 
-  (defvar my-org-last-language nil)
+    (defvar my-org-last-language nil)
+    (defvar max/org-capture-todo-level 2)
 
-  (defun max/org-projects ()
-    "Return level-2 project headings from `my-org-task-file`."
-    (with-current-buffer (find-file-noselect my-org-task-file)
-      (save-excursion
+    (defun max/org-projects ()
+      "Return level-2 project headings from `my-org-task-file`."
+      (with-current-buffer (find-file-noselect my-org-task-file)
+        (save-excursion
+          (goto-char (point-min))
+          (when (re-search-forward "^\\* Projects[ \t]*$" nil t)
+  	  (let (projects)
+  	    (org-map-entries
+  	     (lambda ()
+  	       (push (org-get-heading t t t t) projects))
+              "LEVEL=2"
+              'tree)
+            (nreverse projects))))))
+
+    (defun max/org-capture-todo-target ()
+      "Choose a project for a TODO capture, or Inbox if none is selected."
+      (let ((project
+  	   (ivy-read
+  	    "Project (empty = Inbox): "
+  	    (cons "" (max/org-projects))
+  	    :require-match nil
+  	    :initial-input ""
+  	    :preselect "")))
+
+        ;; Visit the actual capture file.
+        (set-buffer (find-file-noselect my-org-task-file))
+        (org-mode)
+        ;; Find the desired parent headline.
         (goto-char (point-min))
-        (when (re-search-forward "^\\* Projects[ \t]*$" nil t)
-    (let (projects)
-      (org-map-entries (lambda ()
-            (when (= (org-outline-level) 2)
-              (push (org-get-heading t t t t) projects))
-            "LEVEL=2"
-            'tree)
-          (nreverse projects)))))))
-
-  (defun max/org-capture-todo-target ()
-    "Choose a project for a TODO/IDEA/WAIT capture.
-  An empty project selection sends the capture to Inbox."
-    (let ((project
-    (ivy-read
-      "Project (empty = Inbox): "
-      (cons "" (max/org-projects))
-      :require-match nil
-      :initial-input ""
-      :preselect "")))
-      (org-capture-set-target-location
-      (if (string-empty-p project)
-    '(file+headline ,my-org-task-file "Inbox")
-        '(file+headline ,my-org-task-file ,project)))))
-
-  (defun my-org-language-files ()
-    (mapcar
-     (lambda (file)
-       (file-name-base file))
-     (directory-files
-      (expand-file-name my-org-language-directory)
-      t
-      "\\.org\\'")))
-
-  (defun my-org-select-language ()
-    (let* ((langs (my-org-language-files))
-  	 (default (or my-org-last-language
-  		      (car langs)))
-  	 (choice
-  	  (completing-read
-  	   "Language: "
-             langs
-             nil
-             t
-             nil
-             nil
-             default)))
-      (setq my-org-last-language choice)
-      choice))
-
-  (defun my-org-capture-anki-basic ()
-    (let* ((lang (my-org-select-language))
-           (file (expand-file-name
-                  (concat lang ".org")
-                  my-org-language-directory)))
-      (org-capture-set-target-location
-       `(file+headline ,file "Basics"))))
-  
-  (setq org-capture-templates
-      `(("t" "Task" entry
-	 (function max/org-capture-todo-target)
-	 "* TODO %^{Task}
-:PROPERTIES:
-:CREATED: %U
-:EFFORT: %^{Effort}
-:END:
-%?"
-	 :empty-lines 1)
-
-	("i" "Idea" entry
-	 (file+headline my-org-task-file "Inbox")
-	 "* IDEA %^{Idea}
-:PROPERTIES:
-:CREATED: %U
-:EFFORT: %^{Effort}
-:END:
-%?"
-	 :empty-lines 1)
-	
-	("w" "Waiting For" entry
-	 (file+headline my-org-task-file "Inbox")
-	 "* WAIT %^{What are you waiting for?}
-:PROPERTIES:
-:CREATED: %U
-:WAITING_FOR: %^{Waiting for}
-:WAITING_SINCE: %U
-:END:
-%?"
-	 :empty-lines 1)
-	
-	("p" "Project" entry
-	 (file+headline my-org-task-file "Projects")
-	 "** %^{Project name}
-:PROPERTIES:
-:CREATED: %U
-:END:
-
-%?"
-	 :empty-lines 1)
-
-	("m" "Meeting" entry
-	 (file+olp+datetree my-org-journal-file)
-	 "* %<%H:%M> %^{Meeting title} :meeting:
-:PROPERTIES:
-:CREATED: %U
-:END:
-
-*Attendees*
-%^{Attendees}
-
-*Agenda*
-%^{Agenda}
-
-*Notes*
-%?
-
-*Decisions*
-
-*Actions*
-- TODO "
-	 :empty-lines 1)
-
-	("n" "Note" entry
-	 (file+headline my-org-task-file "Inbox")
-	 "* %^{Note title}
-:PROPERTIES:
-:CREATED: %U
-:END:
-
-%?"
-	 :empty-lines 1)
         
-	("j" "Journal" entry
-	 (file+olp+datetree my-org-journal-file)
-	 "\n* %<%I:%M %p> - Journal :journal:\n\n%?\n\n"
-	 :clock-in :clock-resume
-	 :empty-lines 1)
-	
-	("v" "Vocabulary")
-	("vb" "Basic" entry (function my-org-capture-anki-basic)
-	 "* %^{Front}\n:PROPERTIES:\n:ANKI_NOTE_TYPE: Basic\n:END:\n\n%^{Back}\n\n")
-	
-	("e" "EWW article"
-	 entry
-	 (file my-org-web-file)
-	 "* %a\n:PROPERTIES:\n:URL: %u\n:END:\n\n%?"
-	 :empty-lines 1)))
+        (if (string-empty-p project)
+  	  (re-search-forward "^\\* Inbox[ \t]*$" nil t)
+  	(progn
+  	  (re-search-forward "^\\* Projects[ \t]*$" nil t)
+  	  (let ((found nil))
+  	    (org-map-entries
+  	     (lambda ()
+  	       (when (string= (org-get-heading t t t t) project)
+  		 (setq found (point))))
+  	     "LEVEL=2"
+  	     'tree)
+  	    (if found
+  		(goto-char found)
+  	      (user-error "Project not found: %s" project)))))
+        (beginning-of-line)))
 
-  (defun max/org-set-waiting-for ()
-    "Prompt for who/what a task is waiting for and record it."
-  (when (and (string= org-state "WAIT")
-      (not (string= org-last-state "WAIT")))
-    (org-set-property
-    "WAITING_FOR"
-    (read-string "Waiting for: "))
-    (org-set-property
-    "WAITING_SINCE"
-    (format-time-string "[%Y-%m-%d %a %H:%M]"))))
+    (defun my-org-language-files ()
+      (mapcar
+       (lambda (file)
+         (file-name-base file))
+       (directory-files
+        (expand-file-name my-org-language-directory)
+        t
+        "\\.org\\'")))
 
-  (add-hook 'org-after-todo-state-change-hook #'max/org-set-waiting-for)
+    (defun my-org-select-language ()
+      (let* ((langs (my-org-language-files))
+    	 (default (or my-org-last-language
+    		      (car langs)))
+    	 (choice
+    	  (completing-read
+    	   "Language: "
+               langs
+               nil
+               t
+               nil
+               nil
+               default)))
+        (setq my-org-last-language choice)
+        choice))
 
-  (require 'org-tempo)
+    (defun my-org-capture-anki-basic ()
+      (let* ((lang (my-org-select-language))
+             (file (expand-file-name
+                    (concat lang ".org")
+                    my-org-language-directory)))
+        (org-capture-set-target-location
+         `(file+headline ,file "Basics"))))
 
-  (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
-  (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
-  (add-to-list 'org-structure-template-alist '("py" . "src python"))
-  (add-to-list 'org-structure-template-alist '("rs" . "src rust"))
+    (defun max/org-capture-todo-stars ()
+      "Return the appropriate number of stars for a captured task."
+      (make-string max/org-capture-todo-level ?*))
+
+    (setq org-capture-templates
+        `(("t" "Task" entry
+  	(file+function my-org-task-file max/org-capture-todo-target)
+  	 "%(max/org-capture-todo-stars)* TODO %^{Task}
+  :PROPERTIES:
+  :CREATED: %U
+  :EFFORT: %^{Effort}
+  :END:
+  %?"
+  	 :empty-lines 1)
+
+  	("i" "Idea" entry
+  	 (file+headline my-org-task-file "Inbox")
+  	 "* IDEA %^{Idea}
+  :PROPERTIES:
+  :CREATED: %U
+  :EFFORT: %^{Effort}
+  :END:
+  %?"
+  	 :empty-lines 1)
+  	
+  	("w" "Waiting For" entry
+  	 (file+headline my-org-task-file "Inbox")
+  	 "* WAIT %^{What are you waiting for?}
+  :PROPERTIES:
+  :CREATED: %U
+  :WAITING_FOR: %^{Waiting for}
+  :WAITING_SINCE: %U
+  :END:
+  %?"
+  	 :empty-lines 1)
+  	
+  	("p" "Project" entry
+  	 (file+headline my-org-task-file "Projects")
+  	 "** %^{Project name}
+  :PROPERTIES:
+  :CREATED: %U
+  :END:
+
+  %?"
+  	 :empty-lines 1)
+
+  	("m" "Meeting" entry
+  	 (file+olp+datetree my-org-journal-file)
+  	 "* %<%H:%M> %^{Meeting title} :meeting:
+  :PROPERTIES:
+  :CREATED: %U
+  :END:
+
+  ,*Attendees*
+  %^{Attendees}
+
+  ,*Agenda*
+  %^{Agenda}
+
+  ,*Notes*
+  %?
+
+  ,*Decisions*
+
+  ,*Actions*
+  - TODO "
+  	 :empty-lines 1)
+
+  	("n" "Note" entry
+  	 (file+headline my-org-task-file "Inbox")
+  	 "* %^{Note title}
+  :PROPERTIES:
+  :CREATED: %U
+  :END:
+
+  %?"
+  	 :empty-lines 1)
+          
+  	("j" "Journal" entry
+  	 (file+olp+datetree my-org-journal-file)
+  	 "\n* %<%I:%M %p> - Journal :journal:\n\n%?\n\n"
+  	 :clock-in :clock-resume
+  	 :empty-lines 1)
+  	
+  	("v" "Vocabulary")
+  	("vb" "Basic" entry (function my-org-capture-anki-basic)
+  	 "* %^{Front}\n:PROPERTIES:\n:ANKI_NOTE_TYPE: Basic\n:END:\n\n%^{Back}\n\n")
+  	
+  	("e" "EWW article"
+  	 entry
+  	 (file my-org-web-file)
+  	 "* %a\n:PROPERTIES:\n:URL: %u\n:END:\n\n%?"
+  	 :empty-lines 1)))
+
+    (defun max/org-set-waiting-for ()
+      "Prompt for who/what a task is waiting for and record it."
+    (when (and (string= org-state "WAIT")
+        (not (string= org-last-state "WAIT")))
+      (org-set-property
+      "WAITING_FOR"
+      (read-string "Waiting for: "))
+      (org-set-property
+      "WAITING_SINCE"
+      (format-time-string "[%Y-%m-%d %a %H:%M]"))))
+
+    (add-hook 'org-after-todo-state-change-hook #'max/org-set-waiting-for)
+
+    (require 'org-tempo)
+
+    (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
+    (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
+    (add-to-list 'org-structure-template-alist '("py" . "src python"))
+    (add-to-list 'org-structure-template-alist '("rs" . "src rust"))
 #+end_src
 
 ** Babel
