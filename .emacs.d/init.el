@@ -397,6 +397,7 @@
     "~/Nextcloud/Documents/org-files/languages/")
 
   (defvar my-org-last-language nil)
+  (defvar max/org-capture-todo-level 2)
 
   (defun max/org-projects ()
     "Return level-2 project headings from `my-org-task-file`."
