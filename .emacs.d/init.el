@@ -689,8 +689,21 @@
 
 (use-package lsp-ivy)
 
+(use-package yasnippet :hook (lsp-mode . yas-minor-mode))
+
 (max/leader-keys
   "d" '(lsp-ui-doc-show :which-key "show symbol doc"))
+
+(use-package dap-mode
+  :commands dap-debug
+  :hook ((python-mode . dap-mode)
+	 (python-mode . dap-ui-mode))
+  :config
+  (require 'dap-python)
+  (setq dap-python-debugger 'debugpy)
+
+  (defun dap-python--pyenv-executable-find (command)
+    (with-venv (exectuable-find command))))
 
 (use-package company
   :after lsp-mode
@@ -702,10 +715,23 @@
   :custom
   (company-minimum-prefix-length 1)
   (company-idle-delay 0.0)
-  (company-backends '(company-capf company-files company-keywords)))
+  (company-backends
+   '((company-capf :with company-yasnippet)
+     company-files
+     company-keywords))
+
+  (company-selection-wrap-around t)
+  (company-tooltip-align-annotations t)
+  (company-tooltip-flip-when-above t)
+  (company-require-match nil)
+
+  (company-transformers '(company-sort-by-occurrence
+			  company-sort-by-backend-importance)))
 
 (use-package company-box
-  :hook (company-mode . company-box-mode))
+  :hook (company-mode . company-box-mode)
+  :custom
+  (company-box-icons-alist 'company-box-icons-all-the-icons))
 
 (use-package projectile
   :diminish projectile-mode
@@ -731,6 +757,25 @@
   :ensure nil
   :hook ((emacs-lisp-mode . flymake-mode)
          (emacs-lisp-mode . eldoc-mode)))
+
+(use-package lsp-pyright
+  :ensure t
+  :after lsp-mode
+  :custom
+  ;; Let Pyright discover the virtual environment in the project.
+  (lsp-pyright-venv-path nil)
+  ;; Use the Python environment selected by the project when possible.
+  (lsp-pyright-use-library-code-for-types t)
+  ;; "openFilesOnly" is considerably less noisy on large projects.
+  ;; Change to "workspace" if you want diagnostics for every file.
+  (lsp-pyright-diagnostic-mode "openFilesOnly")
+  ;; Type checking is useful for Python, especially when using type hints.
+  (lsp-pyright-typechecking-mode "standard")
+  ;; Pyright can provide useful completion from installed packages.
+  (lsp-pyright-auto-import-completions t)
+  ;; Prefer completion suggestions from the language server.
+  (lsp-completion-enable t)
+  (lsp-completion-enable-additional-text-edit t))
 
 (use-package python-mode
   :hook (python-mode . lsp-deferred)
