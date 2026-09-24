@@ -137,9 +137,18 @@ Configurations for themes go here. I've tried themes from the [[https://github.c
 These are just fonts from some tutorials. I should make a more informed choice at some point.
 
 #+begin_src emacs-lisp
-  (set-face-attribute 'default nil :font "Fira Code Retina" :height 120)
-  (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height 120)
-  (set-face-attribute 'variable-pitch nil :font "Cantarell" :height 140 :weight 'regular)
+  (set-face-attribute 'default nil
+  		    :font "Fira Code Retina"
+  		    :height 120)
+
+  (set-face-attribute 'fixed-pitch nil
+  		    :font "Fira Code Retina"
+  		    :height 120)
+
+  (set-face-attribute 'variable-pitch nil
+  		    :font "Cantarell"
+  		    :height 140
+  		    :weight 'regular)
 #+end_src
 
 ** Column Numbering
@@ -494,9 +503,6 @@ The infamous [[https://orgmode.org/][Org Mode]] is arguably the best way to orga
          "DONE(d!)"
          "CANCELLED(c@)")))
 
-  ;; Save Org buffers after refiling!
-  (advice-add 'org-refile :after 'org-save-all-org-buffers)
-
   (setq org-tag-alist
       '((:startgroup)
          ; Put mutually exclusive tags here
@@ -798,7 +804,7 @@ The infamous [[https://orgmode.org/][Org Mode]] is arguably the best way to orga
    'org-babel-load-languages
    '((emacs-lisp . t)
      (python . t)
-     (mermaid t)))
+     (mermaid . t)))
 #+end_src
 
 *** Tangling
@@ -932,7 +938,7 @@ No modern code editor is complete without prober LSP (Language Server Protocol) 
   (use-package lsp-ivy)
 
   (use-package yasnippet :hook (lsp-mode . yas-minor-mode))
-  
+
   (max/leader-keys
     "d" '(lsp-ui-doc-show :which-key "show symbol doc"))
 #+end_src
@@ -949,7 +955,7 @@ No modern code editor is complete without prober LSP (Language Server Protocol) 
     (setq dap-python-debugger 'debugpy)
 
     (defun dap-python--pyenv-executable-find (command)
-      (with-venv (exectuable-find command))))
+      (with-venv (executable-find command))))
 #+end_src
 ** Company Mode
 For autocompletion in lsp-mode, I use [[https://github.com/company-mode/company-mode][Company]] (*comp* lete *any* thing).
@@ -1484,3 +1490,5 @@ This is a custom package for interfacing with an [[https://arxiv.org/pdf/2603.06
 ;;  (kg-initialize)
 
 #+end_src
+
+

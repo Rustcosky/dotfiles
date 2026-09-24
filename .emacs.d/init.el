@@ -64,9 +64,18 @@
   :config
   (load-theme 'gruvbox-dark-hard t))
 
-(set-face-attribute 'default nil :font "Fira Code Retina" :height 120)
-(set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height 120)
-(set-face-attribute 'variable-pitch nil :font "Cantarell" :height 140 :weight 'regular)
+(set-face-attribute 'default nil
+		    :font "Fira Code Retina"
+		    :height 120)
+
+(set-face-attribute 'fixed-pitch nil
+		    :font "Fira Code Retina"
+		    :height 120)
+
+(set-face-attribute 'variable-pitch nil
+		    :font "Cantarell"
+		    :height 140
+		    :weight 'regular)
 
 (column-number-mode 1)
 (global-display-line-numbers-mode t)
@@ -299,9 +308,6 @@
        "|"
        "DONE(d!)"
        "CANCELLED(c@)")))
-
-;; Save Org buffers after refiling!
-(advice-add 'org-refile :after 'org-save-all-org-buffers)
 
 (setq org-tag-alist
     '((:startgroup)
@@ -596,7 +602,7 @@
  'org-babel-load-languages
  '((emacs-lisp . t)
    (python . t)
-   (mermaid t)))
+   (mermaid . t)))
 
 (defun max/org-babel-tangle-config ()
   (when (string-equal (buffer-file-name)
@@ -703,7 +709,7 @@
   (setq dap-python-debugger 'debugpy)
 
   (defun dap-python--pyenv-executable-find (command)
-    (with-venv (exectuable-find command))))
+    (with-venv (executable-find command))))
 
 (use-package company
   :after lsp-mode
