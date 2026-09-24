@@ -1275,6 +1275,16 @@
               ("f" . eww-lnum-follow)
               ("F" . eww-lnum-universal)))
 
+(use-package osm
+  :bind ("C-c m" . osm-prefix-map) ;; Alternatives: `osm-home' or `osm'
+
+  :custom
+  ;; Take a look at the customization group `osm' for more options.
+  (osm-default-server 'default) ;; Configure the tile server
+  (osm-default-zoom 15)         ;; Default zoom level
+  (osm-copyright t)             ;; Display the copyright information
+  (osm-home (list 52.52 13.40 10)))
+
 (use-package password-store)
 
 (use-package pass

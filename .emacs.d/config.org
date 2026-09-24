@@ -1644,6 +1644,18 @@ Emacs has a build-in browser called [[https://www.gnu.org/software/emacs/manual/
                 ("F" . eww-lnum-universal)))
 #+end_src
 
+** Open Street Map
+#+begin_src emacs-lisp
+(use-package osm
+  :bind ("C-c m" . osm-prefix-map) ;; Alternatives: `osm-home' or `osm'
+
+  :custom
+  ;; Take a look at the customization group `osm' for more options.
+  (osm-default-server 'default) ;; Configure the tile server
+  (osm-default-zoom 15)         ;; Default zoom level
+  (osm-copyright t)             ;; Display the copyright information
+  (osm-home (list 52.52 13.40 10)))
+#+end_src
 ** Pass
 
 With [[https://github.com/NicolasPetton/pass][pass]], we can easily manage our passwords without leaving Emacs (With the eponymous standard unix password manager [[https://www.passwordstore.org/][pass]]. In case I ever want to use this on non-unix systems like Windows, I need to figure out something else here). Requires [[https://github.com/emacsmirror/password-store][password-store]].
