@@ -1429,6 +1429,58 @@ Shell script support is also build-in!
        :hook (LaTeX-mode . my/latex-mode-hook))
  #+end_src
 
+** AI-Integration
+There are many integrations for AI-assistance out there. The community (including me) generally seems to like [[https://github.com/editor-code-assistant/eca-emacs][ECA]] for a provider-agnostic framework.
+
+#+begin_src emacs-lisp
+  (use-package eca
+    :vc (:url "https://github.com/editor-code-assistant/eca-emacs" :rev :newest))
+#+end_src
+
+Using Ollama as a provider requires a little bit of configuration. Here is an example to be put in ~/.config/eca/config.json.
+
+#+begin_src json :tangle no
+{
+  "$schema": "https://eca.dev/config.json",
+
+  "defaultModel": "ollama-openai/gemma4:26b",
+
+  "providers": {
+    "ollama-openai": {
+      "api": "openai-chat",
+      "url": "http://localhost:11434",
+      "key": "ollama",
+      "completionUrlRelativePath": "/v1/chat/completions",
+      "fetchModels": false,
+
+      "models": {
+        "gemma4:26b": {
+          "limit": {
+            "context": 262144,
+            "output": 8192
+          },
+
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        },
+	"hf.co/groxaxo/Huihui-gemma-4-26B-A4B-it-abliterated-GGUF:UD-Q4_K_M": {
+          "limit": {
+            "context": 262144,
+            "output": 8192
+          },
+
+          "cost": {
+            "input": 0,
+            "output": 0
+          }
+        }
+      }
+    }
+  }
+}
+#+end_src
 
 * Files and Such
 
