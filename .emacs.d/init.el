@@ -986,11 +986,13 @@
   :custom
   ;; what to use when checking on-save. "check" is default, I prefer clippy
   (lsp-rust-analyzer-cargo-watch-command "clippy")
-  (lsp-eldoc-render-all t)
+  (lsp-eldoc-render-all nil)
   (lsp-idle-delay 0.6)
+  (lsp-completion-use-last-result t)
   ;; enable / disable the hints as you prefer:
   (lsp-inlay-hint-enable t)
   ;; These are optional configurations. See https://emacs-lsp.github.io/lsp-mode/page/lsp-rust-analyzer/#lsp-rust-analyzer-display-chaining-hints for a full list
+  (lsp-rust-analyzer-cargo-watch-command "check")
   (lsp-rust-analyzer-display-lifetime-elision-hints-enable "skip_trivial")
   (lsp-rust-analyzer-display-chaining-hints t)
   (lsp-rust-analyzer-display-lifetime-elision-hints-use-parameter-names nil)
@@ -1029,24 +1031,21 @@
 
 (use-package company
   :after lsp-mode
-  :hook (lsp-mode . company-mode)
+  :hook
+  (lsp-mode . company-mode)
+  (emacs-lisp-mode . (lambda ()
+			(setq-local company-backends '(company-elisp))))
+  (emacs-lisp-mode . company-mode)
   :bind (:map company-active-map
 	  ("<tab>" . company-complete-selection))
         (:map lsp-mode-map
 	  ("<tab>" . company-indent-or-complete-common))
   :custom
-  (company-minimum-prefix-length 1)
-  (company-idle-delay 0.0)
-  (company-backends
-   '((company-capf :with company-yasnippet)
-     company-files
-     company-keywords))
-
+  (company-minimum-prefix-length 2)
+  (company-idle-delay 0.2)
+  (company-backends '((company-capf :with company-yasnippet)))
   (company-selection-wrap-around t)
   (company-tooltip-align-annotations t)
-  (company-tooltip-flip-when-above t)
-  (company-require-match nil)
-
   (company-transformers '(company-sort-by-occurrence
 			  company-sort-by-backend-importance)))
 
@@ -1055,6 +1054,9 @@
   :custom
   (company-box-icons-alist 'company-box-icons-all-the-icons))
 
+(use-package flycheck
+  :ensure t)
+
 (use-package projectile
   :diminish projectile-mode
   :config (projectile-mode)
@@ -1062,7 +1064,7 @@
   ("C-c p" . projectile-command-map)
   :init
   (when (file-directory-p my-projects-directory)
-    (setq projectile-project-search-path '(my-projects-directory)))
+    (setq projectile-project-search-path (list my-projects-directory)))
   (setq projectile-switch-project-action #'projectile-dired))
 
 (use-package counsel-projectile
@@ -1105,24 +1107,12 @@
   (setq python-shell-interpreter "python3"))
 
 (use-package rustic
-:ensure
-:bind (:map rustic-mode-map
-            ("M-j" . lsp-ui-imenu)
-            ("M-?" . lsp-find-references)
-            ("C-c C-c l" . flycheck-list-errors)
-            ("C-c C-c a" . lsp-execute-code-action)
-            ("C-c C-c r" . lsp-rename)
-            ("C-c C-c q" . lsp-workspace-restart)
-            ("C-c C-c Q" . lsp-workspace-shutdown)
-            ("C-c C-c s" . lsp-rust-analyzer-status))
-:config
-;; uncomment for less flashiness
-;; (setq lsp-eldoc-hook nil)
-;; (setq lsp-enable-symbol-highlighting nil)
-;; (setq lsp-signature-auto-activate nil)
-
-;; comment to disable rustfmt on save
-(setq rustic-format-on-save t))
+  :ensure t
+  :config
+  (require 'lsp-rust)
+  :custom
+  (rustic-lsp-client 'lsp-mode)
+  (rustic-format-on-save t))
 
 (use-package sh-script
   :hook (sh-mode . lsp-deferred))
