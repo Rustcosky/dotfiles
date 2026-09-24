@@ -910,7 +910,7 @@
 (require 'org-eww)
 
 (use-package org-fragtog
-  :hook (org-mode-hook . org-fragtog-mode))
+  :hook (org-mode . org-fragtog-mode))
 
 (defun efs/lsp-mode-setup ()
   (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
@@ -1066,6 +1066,18 @@
 
 (use-package sh-script
   :hook (sh-mode . lsp-deferred))
+
+(defun my/latex-mode-hook ()
+  (advice-add #'TeX-command-master :before (lambda (&rest r) (save-buffer)))
+  (push (list 'output-pdf "Okular") TeX-view-program-selection))
+
+(use-package auctex
+  :ensure t
+  :defer t
+  :hook (LaTeX-mode . my/latex-mode-hook))
+
+(use-package eca
+  :vc (:url "https://github.com/editor-code-assistant/eca-emacs" :rev :newest))
 
 ;; Use a custom file so that emacs doesn't write in init.el
 (setq custom-file "~/.config/emacs/.emacs.custom")

@@ -1141,7 +1141,7 @@ With [[https://github.com/io12/org-fragtog][Fragtog]], inline LaTeX renders on e
 
 #+begin_src emacs-lisp
   (use-package org-fragtog
-    :hook (org-mode-hook . org-fragtog-mode))
+    :hook (org-mode . org-fragtog-mode))
 #+end_src
 
 
@@ -1366,6 +1366,19 @@ Shell script support is also build-in!
   (use-package sh-script
     :hook (sh-mode . lsp-deferred))
 #+end_src
+
+*** LaTeX
+[[https://emacsdocs.org/docs/auctex/AUCTeX][AUCTeX]]
+   #+begin_src emacs-lisp
+     (defun my/latex-mode-hook ()
+       (advice-add #'TeX-command-master :before (lambda (&rest r) (save-buffer)))
+       (push (list 'output-pdf "Okular") TeX-view-program-selection))
+
+     (use-package auctex
+       :ensure t
+       :defer t
+       :hook (LaTeX-mode . my/latex-mode-hook))
+ #+end_src
 
 
 * Files and Such
